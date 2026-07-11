@@ -97,6 +97,17 @@ def test_open_bad_arg_falls_back_to_default(node):
     assert "last 1 day(s)" in b.tg.sent[0][1]
 
 
+def test_command_failure_is_reported(node):
+    b = make_bot()
+
+    def boom(repo, cutoff):
+        raise RuntimeError("github down")
+
+    b.gh.open_prs = boom
+    b.handle(msg(42, "/open"))
+    assert b.tg.sent[-1][1] == "Command failed: github down"
+
+
 def test_closed(node):
     b = make_bot()
     seen = {}

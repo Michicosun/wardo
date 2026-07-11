@@ -84,14 +84,18 @@ class Console:
 
         parts = text.split()
         cmd = parts[0].split("@")[0] if parts else ""
-        if cmd == "/open":
-            self.cmd_open(chat_id, parts[1] if len(parts) > 1 else "")
-        elif cmd == "/closed":
-            self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
-        elif cmd in ("/start", "/help"):
-            self.cmd_help(chat_id)
-        else:
-            self.cmd_unknown(chat_id)
+        try:
+            if cmd == "/open":
+                self.cmd_open(chat_id, parts[1] if len(parts) > 1 else "")
+            elif cmd == "/closed":
+                self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
+            elif cmd in ("/start", "/help"):
+                self.cmd_help(chat_id)
+            else:
+                self.cmd_unknown(chat_id)
+        except Exception as e:
+            log.exception("command failed: %r", text)
+            self.tg.send(chat_id, f"Command failed: {html.escape(str(e))}")
 
     def cmd_open(self, chat_id, arg):
         days = _parse_days(arg)
