@@ -1,6 +1,7 @@
 import datetime
 import html
 import logging
+import re
 import threading
 import time
 
@@ -16,7 +17,7 @@ def now():
 def is_pr_watched(pr, watched):
     for changed_file in pr.files:
         for watched_path in watched:
-            if changed_file.startswith(watched_path):
+            if re.search(watched_path, changed_file):
                 return True
 
     return False

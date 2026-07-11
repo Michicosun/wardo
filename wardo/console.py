@@ -45,7 +45,7 @@ class Console:
         self.poll_interval = cfg.watcher.poll_interval
         self.owner_id = cfg.console.allowed_user_id
 
-    def _stream_prs(self, chat_id, header, prs, paths, line):
+    def _stream_prs(self, chat_id, header, prs, paths):
         self.tg.send(chat_id, header)
 
         found = processed = 0
@@ -58,7 +58,7 @@ class Console:
                 continue
 
             found += 1
-            self.tg.send(chat_id, line(pr))
+            self.tg.send(chat_id, pr_line(pr))
 
         if not found:
             self.tg.send(chat_id, "nothing found")
@@ -96,14 +96,14 @@ class Console:
         cutoff = now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — open PRs in watched paths created in the last {days} day(s):"
-            self._stream_prs(chat_id, header, self.gh.active_prs(r.repo, cutoff), r.paths, active_pr_line)
+            self._stream_prs(chat_id, header, self.gh.active_prs(r.repo, cutoff), r.paths)
 
     def cmd_closed(self, chat_id, arg):
         days = _parse_days(arg)
         cutoff = now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — PRs merged in watched paths in the last {days} day(s):"
-            self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r.paths, closed_pr_line)
+            self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r.paths)
 
     def cmd_help(self, chat_id):
         lines = ["/active [days] — open PRs created in the last [days] days (default 1)",
