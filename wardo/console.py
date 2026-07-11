@@ -17,6 +17,10 @@ def link(pr):
     return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
 
 
+def pr_line(pr):
+    return f"{link(pr)} — {pr.author}"
+
+
 def _parse_days(arg):
     try:
         days = int(arg)
@@ -31,15 +35,6 @@ def _unpack_request_msg(msg):
     chat_id = msg["chat"]["id"]
     text = (msg.get("text") or "").strip()
     return user.get("id"), user.get("username"), chat_id, text
-
-
-def active_pr_line(pr):
-    sub = "🔔 subscribed" if pr.subscribed else "🔕 not subscribed"
-    return f"{link(pr)} — {pr.author} — {sub}"
-
-
-def closed_pr_line(pr):
-    return f"{link(pr)} — {pr.author}"
 
 
 class Console:

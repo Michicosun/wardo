@@ -16,7 +16,6 @@ query($owner: String!, $name: String!, $states: [PullRequestState!]!, $order: Is
       nodes {
         number title url createdAt updatedAt mergedAt
         author { login }
-        viewerSubscription
         files(first: 100) { nodes { path } }
       }
     }
@@ -32,7 +31,6 @@ query($q: String!, $pageSize: Int!, $cursor: String) {
       ... on PullRequest {
         number title url createdAt updatedAt mergedAt
         author { login }
-        viewerSubscription
         files(first: 100) { nodes { path } }
       }
     }
@@ -49,7 +47,6 @@ class PRInfo:
     created_at: datetime.datetime
     updated_at: datetime.datetime
     merged_at: datetime.datetime | None
-    subscribed: bool
     files: list[str]
 
 
@@ -66,7 +63,6 @@ def _parse_pr(node):
         created_at=_parse_ts(node["createdAt"]),
         updated_at=_parse_ts(node["updatedAt"]),
         merged_at=_parse_ts(node["mergedAt"]) if node["mergedAt"] else None,
-        subscribed=node.get("viewerSubscription") == "SUBSCRIBED",
         files=[f["path"] for f in node["files"]["nodes"]],
     )
 
