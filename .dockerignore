@@ -2,6 +2,7 @@
 config.yaml
 tests/
 deploy/
+!deploy/requirements.txt
 *.md
 __pycache__
 .pytest_cache
