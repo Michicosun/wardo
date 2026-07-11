@@ -1,3 +1,4 @@
+import dataclasses
 import datetime
 import logging
 
@@ -21,15 +22,41 @@ query($owner: String!, $name: String!, $states: [PullRequestState!]!, $order: Is
 }
 """
 
+@dataclasses.dataclass
+class PRInfo:
+    number: int
+    title: str
+    url: str
+    author: str
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    merged_at: datetime.datetime | None
+    subscribed: bool
+    files: list[str]
+
 
 def _parse_ts(s):
     return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-def _is_touches_files(pr, watched):
-    for changed_file in pr["files"]["nodes"]:
+def _parse_pr(node):
+    return PRInfo(
+        number=node["number"],
+        title=node["title"],
+        url=node["url"],
+        author=(node.get("author") or {}).get("login", "ghost"),
+        created_at=_parse_ts(node["createdAt"]),
+        updated_at=_parse_ts(node["updatedAt"]),
+        merged_at=_parse_ts(node["mergedAt"]) if node["mergedAt"] else None,
+        subscribed=node.get("viewerSubscription") == "SUBSCRIBED",
+        files=[f["path"] for f in node["files"]["nodes"]],
+    )
+
+
+def _is_pr_watched(pr, watched):
+    for changed_file in pr.files:
         for watched_path in watched:
-            if changed_file["path"].startswith(watched_path):
+            if changed_file.startswith(watched_path):
                 return True
 
     return False
@@ -58,7 +85,8 @@ class GitHub:
             data = self._graphql({"owner": owner, "name": name, "states": states, "order": order, "page": page_size, "cursor": cursor})
             prs = data["repository"]["pullRequests"]
 
-            yield from prs["nodes"]
+            for node in prs["nodes"]:
+                yield _parse_pr(node)
 
             if not prs["pageInfo"]["hasNextPage"]:
                 return
@@ -68,24 +96,24 @@ class GitHub:
     def new_prs(self, repo, paths, since):
         result = []
         for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT", page_size=30):
-            if _parse_ts(pr["createdAt"]) <= since:
+            if pr.created_at <= since:
                 break
 
-            if _is_touches_files(pr, paths):
+            if _is_pr_watched(pr, paths):
                 result.append(pr)
 
         return result
 
     def active_prs(self, repo, paths):
-        return [pr for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT") if _is_touches_files(pr, paths)]
+        return [pr for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT") if _is_pr_watched(pr, paths)]
 
     def closed_prs(self, repo, paths, cutoff):
         result = []
         for pr in self._pull_requests(repo, ["MERGED"], "UPDATED_AT"):
-            if _parse_ts(pr["updatedAt"]) < cutoff:
+            if pr.updated_at < cutoff:
                 break
 
-            if pr["mergedAt"] and _parse_ts(pr["mergedAt"]) >= cutoff and _is_touches_files(pr, paths):
+            if pr.merged_at and pr.merged_at >= cutoff and _is_pr_watched(pr, paths):
                 result.append(pr)
 
         return result
