@@ -1,0 +1,9 @@
+services:
+  wardo:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: wardo
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped

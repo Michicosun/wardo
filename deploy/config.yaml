@@ -1,0 +1,16 @@
+github:
+  token: ghp_xxxxxxxxxxxxxxxxxxxx
+
+telegram:
+  token: "123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+watcher:
+  poll_interval: 60
+  repositories:
+    - repo: ClickHouse/ClickHouse
+      paths:
+        - src/Processors/QueryPlan/
+        - src/Storages/MergeTree/
+
+console:
+  allowed_user_id: 123456789
