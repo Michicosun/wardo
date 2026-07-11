@@ -73,7 +73,7 @@ class GitHub:
         self.headers = {"Authorization": f"Bearer {cfg.token}"}
 
     def _graphql(self, query, variables):
-        r = requests.post(self.api, json={"query": query, "variables": variables}, headers=self.headers, timeout=30)
+        r = requests.post(self.api, json={"query": query, "variables": variables}, headers=self.headers, timeout=60)
         r.raise_for_status()
 
         data = r.json()
