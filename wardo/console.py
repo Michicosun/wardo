@@ -91,7 +91,7 @@ class Console:
             if days <= 0:
                 raise ValueError
         except ValueError:
-            self.tg.send(chat_id, "usage: /closed <days>")
+            self.tg.send(chat_id, "usage: /closed &lt;days&gt;")
             return
 
         cutoff = now() - datetime.timedelta(days=days)
@@ -100,9 +100,8 @@ class Console:
             self.tg.send_lines(chat_id, closed_lines(r.repo, prs, days))
 
     def cmd_help(self, chat_id):
-        lines = ["wardo — GitHub PR path monitor",
-                 "/active — open PRs touching watched paths",
-                 "/closed <days> — PRs merged in the last <days> days",
+        lines = ["/active — open PRs touching watched paths",
+                 "/closed &lt;days&gt; — PRs merged in the last &lt;days&gt; days",
                  "/help — this message",
                  "",
                  f"poll interval: {self.poll_interval}s"]

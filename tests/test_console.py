@@ -53,7 +53,7 @@ def test_closed_bad_arg():
     b = make_bot()
     for arg in ("/closed", "/closed nope", "/closed -3"):
         b.handle(msg(42, arg))
-    assert [t for _, t in b.tg.sent] == ["usage: /closed <days>"] * 3
+    assert [t for _, t in b.tg.sent] == ["usage: /closed &lt;days&gt;"] * 3
 
 
 def test_active(node):
