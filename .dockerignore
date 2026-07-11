@@ -1,0 +1,8 @@
+.git
+config.yaml
+config.example.yaml
+tests/
+deploy/
+*.md
+__pycache__
+.pytest_cache
