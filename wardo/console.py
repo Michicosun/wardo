@@ -84,8 +84,8 @@ class Console:
 
         parts = text.split()
         cmd = parts[0].split("@")[0] if parts else ""
-        if cmd == "/active":
-            self.cmd_active(chat_id, parts[1] if len(parts) > 1 else "")
+        if cmd == "/open":
+            self.cmd_open(chat_id, parts[1] if len(parts) > 1 else "")
         elif cmd == "/closed":
             self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
         elif cmd in ("/start", "/help"):
@@ -93,12 +93,12 @@ class Console:
         else:
             self.cmd_unknown(chat_id)
 
-    def cmd_active(self, chat_id, arg):
+    def cmd_open(self, chat_id, arg):
         days = _parse_days(arg)
         cutoff = now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — open PRs in watched paths created in the last {days} day(s):"
-            self._stream_prs(chat_id, header, self.gh.active_prs(r.repo, cutoff), r.paths)
+            self._stream_prs(chat_id, header, self.gh.open_prs(r.repo, cutoff), r.paths)
 
     def cmd_closed(self, chat_id, arg):
         days = _parse_days(arg)
@@ -108,7 +108,7 @@ class Console:
             self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r.paths)
 
     def cmd_help(self, chat_id):
-        lines = ["/active [days] — open PRs created in the last [days] days (default 1)",
+        lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
                  "/closed [days] — PRs merged in the last [days] days (default 1)",
                  "/help — this message",
                  "",

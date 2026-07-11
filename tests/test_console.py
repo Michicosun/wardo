@@ -31,7 +31,7 @@ def msg(uid, text):
 
 def test_unauthorized():
     b = make_bot()
-    b.handle(msg(7, "/active"))
+    b.handle(msg(7, "/open"))
     assert b.tg.sent == [(7, "Unauthorized access.")]
 
 
@@ -39,7 +39,7 @@ def test_help():
     b = make_bot()
     b.handle(msg(42, "/help"))
     text = b.tg.sent[0][1]
-    assert "/active" in text and "/closed" in text and "x/y" in text
+    assert "/open" in text and "/closed" in text and "x/y" in text
 
 
 def test_unknown_command():
@@ -56,11 +56,11 @@ def test_parse_days():
     assert console._parse_days("0") == 1
 
 
-def test_active(node):
+def test_open(node):
     b = make_bot()
     seen = {}
-    b.gh.active_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and [node()]
-    b.handle(msg(42, "/active"))
+    b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and [node()]
+    b.handle(msg(42, "/open"))
     assert (console.now() - seen["cutoff"]).days == 1
     header, row = b.tg.sent[0][1], b.tg.sent[1][1]
     assert "x/y" in header and "last 1 day(s)" in header
@@ -68,11 +68,11 @@ def test_active(node):
     assert b.tg.sent[2][1] == "Search finished. Processed 1 PRs"
 
 
-def test_active_with_days(node):
+def test_open_with_days(node):
     b = make_bot()
     seen = {}
-    b.gh.active_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
-    b.handle(msg(42, "/active 7"))
+    b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
+    b.handle(msg(42, "/open 7"))
     assert (console.now() - seen["cutoff"]).days == 7
     assert "last 7 day(s)" in b.tg.sent[0][1]
     assert b.tg.sent[1][1] == "Nothing found"
@@ -80,19 +80,19 @@ def test_active_with_days(node):
 
 def test_progress_reports(node):
     b = make_bot()
-    b.gh.active_prs = lambda repo, cutoff: [node(files=["docs/x.md"])] * 250
-    b.handle(msg(42, "/active"))
+    b.gh.open_prs = lambda repo, cutoff: [node(files=["docs/x.md"])] * 250
+    b.handle(msg(42, "/open"))
     texts = [t for _, t in b.tg.sent]
     assert texts.count("Processed 100 PRs…") == 1
     assert texts.count("Processed 200 PRs…") == 1
     assert texts[-1] == "Nothing found"
 
 
-def test_active_bad_arg_falls_back_to_default(node):
+def test_open_bad_arg_falls_back_to_default(node):
     b = make_bot()
     seen = {}
-    b.gh.active_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
-    b.handle(msg(42, "/active nope"))
+    b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
+    b.handle(msg(42, "/open nope"))
     assert (console.now() - seen["cutoff"]).days == 1
     assert "last 1 day(s)" in b.tg.sent[0][1]
 

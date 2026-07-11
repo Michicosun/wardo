@@ -31,14 +31,14 @@ def test_new_prs_filters_and_stops(node):
     assert gh.served == 3
 
 
-def test_active_prs_filters_by_created_at(node):
+def test_open_prs_filters_by_created_at(node):
     cutoff = github._parse_ts("2026-07-04T00:00:00Z")
     gh = FakeGH([
         node(number=2, created="2026-07-06T00:00:00Z"),
         node(number=4, created="2026-07-09T00:00:00Z"),
         node(number=1, created="2026-07-01T00:00:00Z"),
     ])
-    result = list(gh.active_prs("x/y", cutoff))
+    result = list(gh.open_prs("x/y", cutoff))
     assert [pr.number for pr in result] == [2, 4]
     assert gh.queries == ["repo:x/y is:pr is:open created:>=2026-07-04T00:00:00+00:00 sort:created-desc"]
 

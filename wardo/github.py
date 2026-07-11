@@ -123,7 +123,7 @@ class GitHub:
 
         return result
 
-    def active_prs(self, repo, cutoff):
+    def open_prs(self, repo, cutoff):
         q = f"repo:{repo} is:pr is:open created:>={cutoff.strftime('%Y-%m-%dT%H:%M:%S+00:00')} sort:created-desc"
         for pr in self._search_prs(q):
             if pr.created_at >= cutoff:
