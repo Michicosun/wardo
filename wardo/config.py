@@ -28,7 +28,7 @@ class Config:
     telegram: TelegramConfig
 
 
-def load(path="config.yaml"):
+def load(path = "config.yaml"):
     with open(path) as f:
         raw = yaml.safe_load(f)
 
