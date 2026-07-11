@@ -1,6 +1,5 @@
 .git
 config.yaml
-config.example.yaml
 tests/
 deploy/
 *.md
