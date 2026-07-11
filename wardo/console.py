@@ -52,7 +52,7 @@ class Console:
         for pr in prs:
             processed += 1
             if processed % PROGRESS_EVERY == 0:
-                self.tg.send(chat_id, f"processed {processed} PRs…")
+                self.tg.send(chat_id, f"Processed {processed} PRs…")
 
             if not watcher.is_pr_watched(pr, paths):
                 continue
@@ -61,7 +61,9 @@ class Console:
             self.tg.send(chat_id, pr_line(pr))
 
         if not found:
-            self.tg.send(chat_id, "nothing found")
+            self.tg.send(chat_id, "Nothing found")
+        else:
+            self.tg.send(chat_id, f"Search finished. Processed {processed} PRs")
 
     def serve(self):
         for msg in self.tg.updates():
