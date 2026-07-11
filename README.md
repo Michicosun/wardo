@@ -1,4 +1,4 @@
-# wardo
+# Wardo
 
 If you maintain a large project, you may have noticed that, for some time now, many AI slop PRs have been submitted by contributors. If another maintainer without deep knowledge of a component gets assigned to such a PR and merges it, something may break. This project lets you keep an eye on the components that matter to you.
 
