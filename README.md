@@ -33,6 +33,8 @@ watcher:
 
 ## Commands (owner only)
 
+By default, Wardo will automatically notify you about new PRs. These commands are just handy.
+
 - `/open [days]` — PRs opened in the last `days` days (default 1) touching watched paths
 - `/closed [days]` — PRs merged in the last `days` days (default 1) touching watched paths
 - `/help` — command list and watched repos
