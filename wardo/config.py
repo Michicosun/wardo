@@ -1,28 +1,28 @@
-from dataclasses import dataclass
+import dataclasses
 
 import yaml
 
 
-@dataclass
+@dataclasses.dataclass
 class Repository:
     repo: str
     paths: list[str]
 
 
-@dataclass
+@dataclasses.dataclass
 class GithubConfig:
     token: str
     poll_interval: int
     repositories: list[Repository]
 
 
-@dataclass
+@dataclasses.dataclass
 class TelegramConfig:
     token: str
     allowed_user_id: int
 
 
-@dataclass
+@dataclasses.dataclass
 class Config:
     github: GithubConfig
     telegram: TelegramConfig
