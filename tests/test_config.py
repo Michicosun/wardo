@@ -7,13 +7,12 @@ telegram:
   token: tg-token
 watcher:
   poll_interval: 30
+  allowed_user_id: 42
   repositories:
     - repo: x/y
       paths:
         - src/
         - docs/
-console:
-  allowed_user_id: 42
 """
 
 
@@ -24,8 +23,8 @@ def test_load(tmp_path):
     assert cfg.github.token == "gh-token"
     assert cfg.telegram.token == "tg-token"
     assert cfg.watcher.poll_interval == 30
+    assert cfg.watcher.allowed_user_id == 42
     assert cfg.watcher.repositories == [config.Repository(repo="x/y", paths=["src/", "docs/"])]
-    assert cfg.console.allowed_user_id == 42
 
 
 def test_load_default_poll_interval(tmp_path):
