@@ -12,13 +12,21 @@ class Repository:
 @dataclasses.dataclass
 class GithubConfig:
     token: str
-    poll_interval: int
-    repositories: list[Repository]
 
 
 @dataclasses.dataclass
 class TelegramConfig:
     token: str
+
+
+@dataclasses.dataclass
+class WatcherConfig:
+    poll_interval: int
+    repositories: list[Repository]
+
+
+@dataclasses.dataclass
+class ConsoleConfig:
     allowed_user_id: int
 
 
@@ -26,22 +34,28 @@ class TelegramConfig:
 class Config:
     github: GithubConfig
     telegram: TelegramConfig
+    watcher: WatcherConfig
+    console: ConsoleConfig
 
 
 def load(path = "config.yaml"):
     with open(path) as f:
         raw = yaml.safe_load(f)
 
-    gh, tg = raw["github"], raw["telegram"]
+    gh, tg, w, c = raw["github"], raw["telegram"], raw["watcher"], raw["console"]
 
     return Config(
         github=GithubConfig(
             token=gh["token"],
-            poll_interval=int(gh.get("poll_interval", 60)),
-            repositories=[Repository(repo=r["repo"], paths=list(r["paths"])) for r in gh["repositories"]],
         ),
         telegram=TelegramConfig(
             token=tg["token"],
-            allowed_user_id=int(tg["allowed_user_id"]),
+        ),
+        watcher=WatcherConfig(
+            poll_interval=int(w.get("poll_interval", 60)),
+            repositories=[Repository(repo=r["repo"], paths=list(r["paths"])) for r in w["repositories"]],
+        ),
+        console=ConsoleConfig(
+            allowed_user_id=int(c["allowed_user_id"]),
         ),
     )

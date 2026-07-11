@@ -4,6 +4,8 @@ import logging
 
 import requests
 
+from . import config
+
 log = logging.getLogger("wardo.github")
 
 PRS_QUERY = """
@@ -63,9 +65,9 @@ def _is_pr_watched(pr, watched):
 
 
 class GitHub:
-    def __init__(self, token):
+    def __init__(self, cfg: config.GithubConfig) -> None:
         self.api = "https://api.github.com/graphql"
-        self.headers = {"Authorization": f"Bearer {token}"}
+        self.headers = {"Authorization": f"Bearer {cfg.token}"}
 
     def _graphql(self, variables):
         r = requests.post(self.api, json={"query": PRS_QUERY, "variables": variables}, headers=self.headers, timeout=30)

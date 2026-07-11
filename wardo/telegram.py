@@ -30,7 +30,6 @@ def _chunk(lines: Iterable[str], limit: int = MAX_LEN) -> list[str]:
 class Telegram:
     def __init__(self, cfg: config.TelegramConfig) -> None:
         self.api = f"https://api.telegram.org/bot{cfg.token}"
-        self.owner_id = cfg.allowed_user_id
 
     def _send_message(self, chat_id: int, text: str) -> requests.Response:
         return requests.post(f"{self.api}/sendMessage", json={
@@ -51,9 +50,6 @@ class Telegram:
     def send_lines(self, chat_id: int, lines: Iterable[str]) -> None:
         for part in _chunk(lines):
             self.send(chat_id, part)
-
-    def notify(self, text: str) -> None:
-        self.send(self.owner_id, text)
 
     def updates(self) -> Iterator[dict[str, Any]]:
         offset = 0
