@@ -43,7 +43,7 @@ class Console:
         self.tg = telegram.Telegram(cfg.telegram)
         self.repos = cfg.watcher.repositories
         self.poll_interval = cfg.watcher.poll_interval
-        self.owner_id = cfg.console.allowed_user_id
+        self.owner_id = cfg.watcher.allowed_user_id
 
     def _stream_prs(self, chat_id, header, prs, paths):
         self.tg.send(chat_id, header)
