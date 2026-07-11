@@ -9,11 +9,27 @@ from . import config
 log = logging.getLogger("wardo.github")
 
 PRS_QUERY = """
-query($owner: String!, $name: String!, $states: [PullRequestState!]!, $order: IssueOrderField!, $page: Int!, $cursor: String) {
+query($owner: String!, $name: String!, $states: [PullRequestState!]!, $order: IssueOrderField!, $pageSize: Int!, $cursor: String) {
   repository(owner: $owner, name: $name) {
-    pullRequests(states: $states, orderBy: {field: $order, direction: DESC}, first: $page, after: $cursor) {
+    pullRequests(states: $states, orderBy: {field: $order, direction: DESC}, first: $pageSize, after: $cursor) {
       pageInfo { hasNextPage endCursor }
       nodes {
+        number title url createdAt updatedAt mergedAt
+        author { login }
+        viewerSubscription
+        files(first: 100) { nodes { path } }
+      }
+    }
+  }
+}
+"""
+
+SEARCH_PRS_QUERY = """
+query($q: String!, $pageSize: Int!, $cursor: String) {
+  search(query: $q, type: ISSUE, first: $pageSize, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
         number title url createdAt updatedAt mergedAt
         author { login }
         viewerSubscription
@@ -55,22 +71,13 @@ def _parse_pr(node):
     )
 
 
-def _is_pr_watched(pr, watched):
-    for changed_file in pr.files:
-        for watched_path in watched:
-            if changed_file.startswith(watched_path):
-                return True
-
-    return False
-
-
 class GitHub:
     def __init__(self, cfg: config.GithubConfig) -> None:
         self.api = "https://api.github.com/graphql"
         self.headers = {"Authorization": f"Bearer {cfg.token}"}
 
-    def _graphql(self, variables):
-        r = requests.post(self.api, json={"query": PRS_QUERY, "variables": variables}, headers=self.headers, timeout=30)
+    def _graphql(self, query, variables):
+        r = requests.post(self.api, json={"query": query, "variables": variables}, headers=self.headers, timeout=30)
         r.raise_for_status()
 
         data = r.json()
@@ -84,7 +91,7 @@ class GitHub:
         owner, name = repo.split("/")
         cursor = None
         while True:
-            data = self._graphql({"owner": owner, "name": name, "states": states, "order": order, "page": page_size, "cursor": cursor})
+            data = self._graphql(PRS_QUERY, {"owner": owner, "name": name, "states": states, "order": order, "pageSize": page_size, "cursor": cursor})
             prs = data["repository"]["pullRequests"]
 
             for node in prs["nodes"]:
@@ -95,27 +102,39 @@ class GitHub:
 
             cursor = prs["pageInfo"]["endCursor"]
 
-    def new_prs(self, repo, paths, since):
+    def _search_prs(self, q, page_size=100):
+        cursor = None
+        while True:
+            data = self._graphql(SEARCH_PRS_QUERY, {"q": q, "pageSize": page_size, "cursor": cursor})
+            found = data["search"]
+
+            for node in found["nodes"]:
+                if node:
+                    yield _parse_pr(node)
+
+            if not found["pageInfo"]["hasNextPage"]:
+                return
+
+            cursor = found["pageInfo"]["endCursor"]
+
+    def new_prs(self, repo, since):
         result = []
-        for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT", page_size=30):
+        for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT"):
             if pr.created_at <= since:
                 break
 
-            if _is_pr_watched(pr, paths):
-                result.append(pr)
+            result.append(pr)
 
         return result
 
-    def active_prs(self, repo, paths):
-        return [pr for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT") if _is_pr_watched(pr, paths)]
+    def active_prs(self, repo, cutoff):
+        q = f"repo:{repo} is:pr is:open created:>={cutoff.strftime('%Y-%m-%dT%H:%M:%S+00:00')} sort:created-desc"
+        for pr in self._search_prs(q):
+            if pr.created_at >= cutoff:
+                yield pr
 
-    def closed_prs(self, repo, paths, cutoff):
-        result = []
-        for pr in self._pull_requests(repo, ["MERGED"], "UPDATED_AT"):
-            if pr.updated_at < cutoff:
-                break
-
-            if pr.merged_at and pr.merged_at >= cutoff and _is_pr_watched(pr, paths):
-                result.append(pr)
-
-        return result
+    def closed_prs(self, repo, cutoff):
+        q = f"repo:{repo} is:pr is:merged merged:>={cutoff.strftime('%Y-%m-%dT%H:%M:%S+00:00')} sort:updated-desc"
+        for pr in self._search_prs(q):
+            if pr.merged_at and pr.merged_at >= cutoff:
+                yield pr

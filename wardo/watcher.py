@@ -13,6 +13,15 @@ def now():
     return datetime.datetime.now(datetime.timezone.utc)
 
 
+def is_pr_watched(pr, watched):
+    for changed_file in pr.files:
+        for watched_path in watched:
+            if changed_file.startswith(watched_path):
+                return True
+
+    return False
+
+
 def new_pr_message(repo, pr):
     return (f"🆕 New PR in {repo}\n"
             f"#{pr.number}: {html.escape(pr.title)}\n"
@@ -32,9 +41,13 @@ class Watcher:
     def _round(self):
         started = now()
 
+        log.info("started watcher round at %s", started)
         for r in self.repos:
             try:
-                for pr in self.gh.new_prs(r.repo, r.paths, self.since[r.repo]):
+                for pr in self.gh.new_prs(r.repo, self.since[r.repo]):
+                    if not is_pr_watched(pr, r.paths):
+                        continue
+
                     log.info("new PR #%s in %s", pr.number, r.repo)
                     self.tg.send(self.owner_id, new_pr_message(r.repo, pr))
 
