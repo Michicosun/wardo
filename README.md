@@ -21,8 +21,9 @@ github:
 telegram:
   token: "123456789:AA...."                  # from @BotFather
 
-watcher:
+wardo:
   poll_interval: 60                          # seconds between polls
+  ping_schedule: "0 9 * * *"                 # cron, sends an "I'm alive" ping
   allowed_user_id: 123456789                 # your Telegram user id
   repositories:
     - repo: ClickHouse/ClickHouse
