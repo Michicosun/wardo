@@ -41,9 +41,9 @@ class Console:
     def __init__(self, cfg):
         self.gh = github.GitHub(cfg.github)
         self.tg = telegram.Telegram(cfg.telegram)
-        self.repos = cfg.watcher.repositories
-        self.poll_interval = cfg.watcher.poll_interval
-        self.owner_id = cfg.watcher.allowed_user_id
+        self.repos = cfg.wardo.repositories
+        self.poll_interval = cfg.wardo.poll_interval
+        self.owner_id = cfg.wardo.allowed_user_id
 
     def _stream_prs(self, chat_id, header, prs, paths):
         self.tg.send(chat_id, header)

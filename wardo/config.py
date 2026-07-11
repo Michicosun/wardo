@@ -20,8 +20,9 @@ class TelegramConfig:
 
 
 @dataclasses.dataclass
-class WatcherConfig:
+class WardoConfig:
     poll_interval: int
+    ping_schedule: str
     allowed_user_id: int
     repositories: list[Repository]
 
@@ -30,14 +31,14 @@ class WatcherConfig:
 class Config:
     github: GithubConfig
     telegram: TelegramConfig
-    watcher: WatcherConfig
+    wardo: WardoConfig
 
 
 def load(path = "config.yaml"):
     with open(path) as f:
         raw = yaml.safe_load(f)
 
-    gh, tg, w = raw["github"], raw["telegram"], raw["watcher"]
+    gh, tg, w = raw["github"], raw["telegram"], raw["wardo"]
 
     return Config(
         github=GithubConfig(
@@ -46,8 +47,9 @@ def load(path = "config.yaml"):
         telegram=TelegramConfig(
             token=tg["token"],
         ),
-        watcher=WatcherConfig(
+        wardo=WardoConfig(
             poll_interval=int(w.get("poll_interval", 60)),
+            ping_schedule=w["ping_schedule"],
             allowed_user_id=int(w["allowed_user_id"]),
             repositories=[Repository(repo=r["repo"], paths=list(r["paths"])) for r in w["repositories"]],
         ),
