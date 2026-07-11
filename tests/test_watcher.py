@@ -1,4 +1,4 @@
-from wardo import watcher
+from wardo.services import watcher
 
 
 def test_is_pr_watched_prefix(node):

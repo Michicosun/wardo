@@ -5,7 +5,7 @@ import time
 
 import croniter
 
-from . import telegram
+from ..clients import telegram
 
 log = logging.getLogger("wardo.pinger")
 

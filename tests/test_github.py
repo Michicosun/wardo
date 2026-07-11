@@ -1,4 +1,5 @@
-from wardo import config, github
+from wardo.config import config
+from wardo.clients import github
 
 
 class FakeGH(github.GitHub):

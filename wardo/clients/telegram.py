@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-from . import config
+from ..config import config
 
 log = logging.getLogger("wardo.telegram")
 

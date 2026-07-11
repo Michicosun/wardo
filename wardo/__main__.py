@@ -1,7 +1,8 @@
 import logging
 import sys
 
-from . import config, console, pinger, watcher
+from .config import config
+from .services import console, pinger, watcher
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s",

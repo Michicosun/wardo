@@ -2,7 +2,8 @@ import datetime
 import html
 import logging
 
-from . import github, telegram, watcher
+from ..clients import github, telegram
+from . import watcher
 
 log = logging.getLogger("wardo.console")
 

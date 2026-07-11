@@ -1,6 +1,6 @@
 import pytest
 
-from wardo import github
+from wardo.clients import github
 
 
 @pytest.fixture

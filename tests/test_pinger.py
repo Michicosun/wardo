@@ -1,6 +1,7 @@
 import datetime
 
-from wardo import config, pinger
+from wardo.config import config
+from wardo.services import pinger
 
 CFG = config.Config(
     github=config.GithubConfig(token="x"),

@@ -5,7 +5,7 @@ import re
 import threading
 import time
 
-from . import github, telegram
+from ..clients import github, telegram
 
 log = logging.getLogger("wardo.watcher")
 

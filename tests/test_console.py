@@ -1,4 +1,5 @@
-from wardo import config, console
+from wardo.config import config
+from wardo.services import console
 
 CFG = config.Config(
     github=config.GithubConfig(token="x"),

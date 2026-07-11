@@ -1,4 +1,4 @@
-from wardo import config
+from wardo.config import config
 
 YAML = """
 github:

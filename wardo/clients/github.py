@@ -4,7 +4,7 @@ import logging
 
 import requests
 
-from . import config
+from ..config import config
 
 log = logging.getLogger("wardo.github")
 
