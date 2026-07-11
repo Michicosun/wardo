@@ -28,20 +28,20 @@ class Config:
     telegram: TelegramConfig
 
 
-def load(path = "config.yaml"):
+def load(path="config.yaml"):
     with open(path) as f:
         raw = yaml.safe_load(f)
 
     gh, tg = raw["github"], raw["telegram"]
 
     return Config(
-        github = GithubConfig(
-            token = gh["token"],
-            poll_interval = int(gh.get("poll_interval", 60)),
-            repositories = [Repository(repo = r["repo"], paths = list(r["paths"])) for r in gh["repositories"]],
+        github=GithubConfig(
+            token=gh["token"],
+            poll_interval=int(gh.get("poll_interval", 60)),
+            repositories=[Repository(repo=r["repo"], paths=list(r["paths"])) for r in gh["repositories"]],
         ),
-        telegram = TelegramConfig(
-            token = tg["token"],
-            allowed_user_id = int(tg["allowed_user_id"]),
+        telegram=TelegramConfig(
+            token=tg["token"],
+            allowed_user_id=int(tg["allowed_user_id"]),
         ),
     )

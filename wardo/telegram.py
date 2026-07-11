@@ -12,7 +12,7 @@ log = logging.getLogger("wardo.telegram")
 MAX_LEN = 4096
 
 
-def chunk(lines: Iterable[str], limit: int = MAX_LEN) -> list[str]:
+def _chunk(lines: Iterable[str], limit: int = MAX_LEN) -> list[str]:
     parts, cur = [], ""
     for line in lines:
         if cur and len(cur) + len(line) + 1 > limit:
@@ -49,7 +49,7 @@ class Telegram:
             log.error("sendMessage failed: %s", r.text)
 
     def send_lines(self, chat_id: int, lines: Iterable[str]) -> None:
-        for part in chunk(lines):
+        for part in _chunk(lines):
             self.send(chat_id, part)
 
     def notify(self, text: str) -> None:
