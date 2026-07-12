@@ -7,6 +7,7 @@ import yaml
 class Repository:
     repo: str
     paths: list[str]
+    title_filters: list[str]
 
 
 @dataclasses.dataclass
@@ -51,6 +52,9 @@ def load(path = "config.yaml"):
             poll_interval=int(w.get("poll_interval", 60)),
             ping_schedule=w["ping_schedule"],
             allowed_user_id=int(w["allowed_user_id"]),
-            repositories=[Repository(repo=r["repo"], paths=list(r["paths"])) for r in w["repositories"]],
+            repositories=[Repository(repo=r["repo"],
+                                     paths=list(r["paths"]),
+                                     title_filters=list(r.get("title_filters", list())))
+                          for r in w["repositories"]],
         ),
     )

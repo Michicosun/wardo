@@ -48,7 +48,7 @@ class Console:
         self.watcher_bot = watcher_bot
         self.pinger_bot = pinger_bot
 
-    def _stream_prs(self, chat_id, header, prs, paths):
+    def _stream_prs(self, chat_id, header, prs, repo):
         self.tg.send(chat_id, header)
 
         found = processed = 0
@@ -57,7 +57,7 @@ class Console:
             if processed % PROGRESS_EVERY == 0:
                 self.tg.send(chat_id, f"Processed {processed} PRs…")
 
-            if not utils.is_pr_watched(pr, paths):
+            if not utils.is_pr_matched(pr, repo):
                 continue
 
             found += 1
@@ -107,14 +107,14 @@ class Console:
         cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — open PRs in watched paths created in the last {days} day(s):"
-            self._stream_prs(chat_id, header, self.gh.open_prs(r.repo, cutoff), r.paths)
+            self._stream_prs(chat_id, header, self.gh.open_prs(r.repo, cutoff), r)
 
     def cmd_closed(self, chat_id, arg):
         days = _parse_days(arg)
         cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — PRs merged in watched paths in the last {days} day(s):"
-            self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r.paths)
+            self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r)
 
     def cmd_help(self, chat_id):
         lines = ["/open [days] — open PRs created in the last [days] days (default 1)",

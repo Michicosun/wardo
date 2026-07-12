@@ -25,8 +25,15 @@ def test_load(tmp_path):
     assert cfg.telegram.token == "tg-token"
     assert cfg.wardo.poll_interval == 30
     assert cfg.wardo.allowed_user_id == 42
-    assert cfg.wardo.repositories == [config.Repository(repo="x/y", paths=["src/", "docs/"])]
+    assert cfg.wardo.repositories == [config.Repository(repo="x/y", paths=["src/", "docs/"], title_filters=[])]
+    assert cfg.wardo.repositories[0].title_filters == []
     assert cfg.wardo.ping_schedule == "0 9 * * *"
+
+
+def test_load_title_filters(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text(YAML + '      title_filters:\n        - "^Backport"\n')
+    assert config.load(str(path)).wardo.repositories[0].title_filters == ["^Backport"]
 
 
 def test_load_default_poll_interval(tmp_path):

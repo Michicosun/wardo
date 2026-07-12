@@ -5,7 +5,7 @@ CFG = config.Config(
     github=config.GithubConfig(token="x"),
     telegram=config.TelegramConfig(token="y"),
     wardo=config.WardoConfig(poll_interval=5, ping_schedule="0 9 * * *", allowed_user_id=42,
-                             repositories=[config.Repository(repo="x/y", paths=["src/"])]),
+                             repositories=[config.Repository(repo="x/y", paths=["src/"], title_filters=[])]),
 )
 
 
@@ -51,7 +51,7 @@ def test_info():
     assert "<b>poll interval:</b> 5s" in text
     assert "<b>last ping:</b> never" in text
     assert "<b>next ping:</b>" in text and "<b>next ping:</b> never" not in text
-    assert "<b>x/y</b> (synced up to:" in text and "src/" in text
+    assert "<b>x/y</b> (up to:" in text and "src/" in text
 
 
 def test_info_with_activity():

@@ -43,7 +43,7 @@ class Watcher:
 
                     seen[pr.number] = pr.created_at
 
-                    if pr.created_at <= self.boot or not utils.is_pr_watched(pr, r.paths):
+                    if pr.created_at <= self.boot or not utils.is_pr_matched(pr, r):
                         continue
 
                     log.info("new PR #%s in %s", pr.number, r.repo)
