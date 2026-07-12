@@ -2,7 +2,7 @@
 
 If you maintain a large project, you may have noticed that, for some time now, many AI slop PRs have been submitted by contributors. If another maintainer without deep knowledge of a component gets assigned to such a PR and merges it, something may break. This project lets you keep an eye on the components that matter to you.
 
-Wardo is a stateless Telegram bot that watches configured paths in GitHub repositories and notifies the owner about newly opened PRs touching them.
+Wardo is a stateless Telegram bot that watches configured paths in GitHub repositories and notifies the owner about newly opened, merged and closed PRs touching them.
 
 ## Quick start
 
@@ -30,14 +30,16 @@ wardo:
       paths:                                 # substring or regex
         - src/Processors/QueryPlan/
         - ^src/Storages/MergeTree/.*\.cpp$
+      title_filters:                         # optional: hide PRs whose title matches
+        - "^Backport"
 ```
 
 ## Commands (owner only)
 
-By default, Wardo will automatically notify you about new PRs. These commands are just handy.
+By default, Wardo will automatically notify you about new, merged and closed PRs. These commands are just handy.
 
 - `/open [days]` — PRs opened in the last `days` days (default 1) touching watched paths
-- `/closed [days]` — PRs merged in the last `days` days (default 1) touching watched paths
+- `/merged [days]` — PRs merged in the last `days` days (default 1) touching watched paths
 - `/info` — watched repositories and settings
 - `/help` — command list
 
