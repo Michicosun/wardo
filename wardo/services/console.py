@@ -3,23 +3,19 @@ import html
 import logging
 
 from ..clients import github, telegram
-from . import watcher
+from . import utils
 
 log = logging.getLogger("wardo.console")
 
 PROGRESS_EVERY = 100
 
 
-def now():
-    return datetime.datetime.now(datetime.timezone.utc)
-
-
-def link(pr):
+def _link(pr):
     return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
 
 
-def pr_line(pr):
-    return f"{link(pr)} — {pr.author}"
+def _pr_line(pr):
+    return f"{_link(pr)} — {pr.author}"
 
 
 def _format_ts(ts):
@@ -61,11 +57,11 @@ class Console:
             if processed % PROGRESS_EVERY == 0:
                 self.tg.send(chat_id, f"Processed {processed} PRs…")
 
-            if not watcher.is_pr_watched(pr, paths):
+            if not utils.is_pr_watched(pr, paths):
                 continue
 
             found += 1
-            self.tg.send(chat_id, pr_line(pr))
+            self.tg.send(chat_id, _pr_line(pr))
 
         if not found:
             self.tg.send(chat_id, "Nothing found")
@@ -108,14 +104,14 @@ class Console:
 
     def cmd_open(self, chat_id, arg):
         days = _parse_days(arg)
-        cutoff = now() - datetime.timedelta(days=days)
+        cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — open PRs in watched paths created in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.open_prs(r.repo, cutoff), r.paths)
 
     def cmd_closed(self, chat_id, arg):
         days = _parse_days(arg)
-        cutoff = now() - datetime.timedelta(days=days)
+        cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — PRs merged in watched paths in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r.paths)

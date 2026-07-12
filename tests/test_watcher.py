@@ -1,6 +1,6 @@
 from wardo.clients import github
 from wardo.config import config
-from wardo.services import watcher
+from wardo.services import utils, watcher
 
 CFG = config.Config(
     github=config.GithubConfig(token="x"),
@@ -19,7 +19,7 @@ class FakeTG:
 
 
 def make_watcher(monkeypatch):
-    monkeypatch.setattr(watcher, "now", lambda: github._parse_ts("2026-07-10T01:00:00Z"))
+    monkeypatch.setattr(utils, "now", lambda: github._parse_ts("2026-07-10T01:00:00Z"))
     w = watcher.Watcher(CFG)
     w.tg = FakeTG()
     w.boot = github._parse_ts("2026-07-01T00:00:00Z")
@@ -28,22 +28,22 @@ def make_watcher(monkeypatch):
 
 def test_is_pr_watched_prefix(node):
     pr = node(files=["src/a.py", "docs/b.md", "src/deep/c.py"])
-    assert watcher.is_pr_watched(pr, ["src/", "lib/"])
-    assert watcher.is_pr_watched(pr, ["docs/"])
-    assert not watcher.is_pr_watched(pr, ["lib/"])
+    assert utils.is_pr_watched(pr, ["src/", "lib/"])
+    assert utils.is_pr_watched(pr, ["docs/"])
+    assert not utils.is_pr_watched(pr, ["lib/"])
 
 
 def test_is_pr_watched_substring(node):
     pr = node(files=["src/Processors/QueryPlan/Optimizations/foo.cpp"])
-    assert watcher.is_pr_watched(pr, ["QueryPlan"])
-    assert not watcher.is_pr_watched(pr, ["MergeTree"])
+    assert utils.is_pr_watched(pr, ["QueryPlan"])
+    assert not utils.is_pr_watched(pr, ["MergeTree"])
 
 
 def test_is_pr_watched_regex(node):
     pr = node(files=["src/Storages/MergeTree/MergeTreeData.cpp"])
-    assert watcher.is_pr_watched(pr, [r"MergeTree.*\.cpp$"])
-    assert watcher.is_pr_watched(pr, [r"^src/(Storages|Processors)/"])
-    assert not watcher.is_pr_watched(pr, [r"\.py$"])
+    assert utils.is_pr_watched(pr, [r"MergeTree.*\.cpp$"])
+    assert utils.is_pr_watched(pr, [r"^src/(Storages|Processors)/"])
+    assert not utils.is_pr_watched(pr, [r"\.py$"])
 
 
 def test_round_notifies_watched_pr_once(node, monkeypatch):

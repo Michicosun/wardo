@@ -1,5 +1,5 @@
 from wardo.config import config
-from wardo.services import console, pinger, watcher
+from wardo.services import console, pinger, utils, watcher
 
 CFG = config.Config(
     github=config.GithubConfig(token="x"),
@@ -56,7 +56,7 @@ def test_info():
 
 def test_info_with_activity():
     b = make_bot()
-    b.pinger_bot.last_ping = console.now()
+    b.pinger_bot.last_ping = utils.now()
     b.handle(msg(42, "/info"))
     text = b.tg.sent[0][1]
     assert "never" not in text
@@ -82,7 +82,7 @@ def test_open(node):
     seen = {}
     b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and [node()]
     b.handle(msg(42, "/open"))
-    assert (console.now() - seen["cutoff"]).days == 1
+    assert (utils.now() - seen["cutoff"]).days == 1
     header, row = b.tg.sent[0][1], b.tg.sent[1][1]
     assert "x/y" in header and "last 1 day(s)" in header
     assert "alice" in row and "https://github.com/x/y/pull/1" in row
@@ -94,7 +94,7 @@ def test_open_with_days(node):
     seen = {}
     b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
     b.handle(msg(42, "/open 7"))
-    assert (console.now() - seen["cutoff"]).days == 7
+    assert (utils.now() - seen["cutoff"]).days == 7
     assert "last 7 day(s)" in b.tg.sent[0][1]
     assert b.tg.sent[1][1] == "Nothing found"
 
@@ -114,7 +114,7 @@ def test_open_bad_arg_falls_back_to_default(node):
     seen = {}
     b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
     b.handle(msg(42, "/open nope"))
-    assert (console.now() - seen["cutoff"]).days == 1
+    assert (utils.now() - seen["cutoff"]).days == 1
     assert "last 1 day(s)" in b.tg.sent[0][1]
 
 
@@ -134,6 +134,6 @@ def test_closed(node):
     seen = {}
     b.gh.closed_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
     b.handle(msg(42, "/closed 7"))
-    assert (console.now() - seen["cutoff"]).days == 7
+    assert (utils.now() - seen["cutoff"]).days == 7
     assert "merged" in b.tg.sent[0][1] and "last 7 day(s)" in b.tg.sent[0][1]
     assert b.tg.sent[1][1] == "Nothing found"

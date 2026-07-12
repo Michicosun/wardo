@@ -6,21 +6,18 @@ import time
 import croniter
 
 from ..clients import telegram
+from . import utils
 
 log = logging.getLogger("wardo.pinger")
 
 PING_TEXT = "✅ Wardo is alive"
 
 
-def now():
-    return datetime.datetime.now(datetime.timezone.utc)
-
-
 class Pinger:
     def __init__(self, cfg):
         self.tg = telegram.Telegram(cfg.telegram)
         self.owner_id = cfg.wardo.allowed_user_id
-        self.schedule = croniter.croniter(cfg.wardo.ping_schedule, now())
+        self.schedule = croniter.croniter(cfg.wardo.ping_schedule, utils.now())
         self.last_ping = None
         self.next_ping = self.schedule.get_next(datetime.datetime)
 
@@ -35,10 +32,10 @@ class Pinger:
             log.exception("ping failed")
             return
 
-        self.last_ping = now()
+        self.last_ping = utils.now()
 
     def _loop(self):
         while True:
-            time.sleep(max((self.next_ping - now()).total_seconds(), 0))
+            time.sleep(max((self.next_ping - utils.now()).total_seconds(), 0))
             self.ping()
             self.next_ping = self.schedule.get_next(datetime.datetime)
