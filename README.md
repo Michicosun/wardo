@@ -32,6 +32,8 @@ wardo:
         - ^src/Storages/MergeTree/.*\.cpp$
       title_filters:                         # optional: hide PRs whose title matches
         - "^Backport"
+      label_filters:                         # optional: hide PRs with a matching label
+        - "pr-backport"
 ```
 
 ## Commands (owner only)
