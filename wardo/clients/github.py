@@ -8,21 +8,6 @@ from ..config import config
 
 log = logging.getLogger("wardo.github")
 
-PRS_QUERY = """
-query($owner: String!, $name: String!, $states: [PullRequestState!]!, $order: IssueOrderField!, $pageSize: Int!, $cursor: String) {
-  repository(owner: $owner, name: $name) {
-    pullRequests(states: $states, orderBy: {field: $order, direction: DESC}, first: $pageSize, after: $cursor) {
-      pageInfo { hasNextPage endCursor }
-      nodes {
-        number title url createdAt updatedAt mergedAt
-        author { login }
-        files(first: 100) { nodes { path } }
-      }
-    }
-  }
-}
-"""
-
 SEARCH_PRS_QUERY = """
 query($q: String!, $pageSize: Int!, $cursor: String) {
   search(query: $q, type: ISSUE, first: $pageSize, after: $cursor) {
@@ -54,6 +39,10 @@ def _parse_ts(s):
     return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
+def _fmt_search_ts(ts):
+    return ts.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+
 def _parse_pr(node):
     return PRInfo(
         number=node["number"],
@@ -83,21 +72,6 @@ class GitHub:
 
         return data["data"]
 
-    def _pull_requests(self, repo, states, order, page_size=100):
-        owner, name = repo.split("/")
-        cursor = None
-        while True:
-            data = self._graphql(PRS_QUERY, {"owner": owner, "name": name, "states": states, "order": order, "pageSize": page_size, "cursor": cursor})
-            prs = data["repository"]["pullRequests"]
-
-            for node in prs["nodes"]:
-                yield _parse_pr(node)
-
-            if not prs["pageInfo"]["hasNextPage"]:
-                return
-
-            cursor = prs["pageInfo"]["endCursor"]
-
     def _search_prs(self, q, page_size=100):
         cursor = None
         while True:
@@ -113,24 +87,20 @@ class GitHub:
 
             cursor = found["pageInfo"]["endCursor"]
 
-    def new_prs(self, repo, since):
-        result = []
-        for pr in self._pull_requests(repo, ["OPEN"], "CREATED_AT"):
-            if pr.created_at <= since:
-                break
-
-            result.append(pr)
-
-        return result
+    def new_prs(self, repo, cutoff):
+        q = f"repo:{repo} is:pr created:>={_fmt_search_ts(cutoff)} sort:created-desc"
+        for pr in self._search_prs(q):
+            if pr.created_at >= cutoff:
+                yield pr
 
     def open_prs(self, repo, cutoff):
-        q = f"repo:{repo} is:pr is:open created:>={cutoff.strftime('%Y-%m-%dT%H:%M:%S+00:00')} sort:created-desc"
+        q = f"repo:{repo} is:pr is:open created:>={_fmt_search_ts(cutoff)} sort:created-desc"
         for pr in self._search_prs(q):
             if pr.created_at >= cutoff:
                 yield pr
 
     def closed_prs(self, repo, cutoff):
-        q = f"repo:{repo} is:pr is:merged merged:>={cutoff.strftime('%Y-%m-%dT%H:%M:%S+00:00')} sort:updated-desc"
+        q = f"repo:{repo} is:pr is:merged merged:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.merged_at and pr.merged_at >= cutoff:
                 yield pr

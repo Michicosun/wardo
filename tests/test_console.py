@@ -48,15 +48,14 @@ def test_info():
     b = make_bot()
     b.handle(msg(42, "/info"))
     text = b.tg.sent[0][1]
-    assert "poll interval: 5s" in text
-    assert "last ping: never" in text
-    assert "next ping:" in text and "next ping: never" not in text
-    assert "x/y (last sync: never):" in text and "src/" in text
+    assert "<b>poll interval:</b> 5s" in text
+    assert "<b>last ping:</b> never" in text
+    assert "<b>next ping:</b>" in text and "<b>next ping:</b> never" not in text
+    assert "<b>x/y</b> (synced up to:" in text and "src/" in text
 
 
 def test_info_with_activity():
     b = make_bot()
-    b.watcher_bot.last_sync["x/y"] = console.now()
     b.pinger_bot.last_ping = console.now()
     b.handle(msg(42, "/info"))
     text = b.tg.sent[0][1]

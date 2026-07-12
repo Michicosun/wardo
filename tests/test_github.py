@@ -6,30 +6,23 @@ class FakeGH(github.GitHub):
     def __init__(self, nodes):
         super().__init__(config.GithubConfig(token="x"))
         self.nodes = nodes
-        self.served = 0
         self.queries = []
-
-    def _pull_requests(self, repo, states, order, page_size=100):
-        for n in self.nodes:
-            self.served += 1
-            yield n
 
     def _search_prs(self, q, page_size=100):
         self.queries.append(q)
         yield from self.nodes
 
 
-def test_new_prs_filters_and_stops(node):
-    since = github._parse_ts("2026-07-10T00:00:00Z")
+def test_new_prs_filters_by_created_at(node):
+    cutoff = github._parse_ts("2026-07-10T11:00:00Z")
     gh = FakeGH([
-        node(number=4, created="2026-07-11T00:00:00Z"),
-        node(number=3, created="2026-07-10T12:00:00Z"),
-        node(number=2, created="2026-07-09T00:00:00Z"),
-        node(number=1, created="2026-07-08T00:00:00Z"),
+        node(number=3, created="2026-07-10T12:30:00Z"),
+        node(number=2, created="2026-07-10T11:30:00Z"),
+        node(number=1, created="2026-07-10T10:30:00Z"),
     ])
-    result = gh.new_prs("x/y", since)
-    assert [pr.number for pr in result] == [4, 3]
-    assert gh.served == 3
+    result = list(gh.new_prs("x/y", cutoff))
+    assert [pr.number for pr in result] == [3, 2]
+    assert gh.queries == ["repo:x/y is:pr created:>=2026-07-10T11:00:00+00:00 sort:created-desc"]
 
 
 def test_open_prs_filters_by_created_at(node):

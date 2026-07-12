@@ -129,13 +129,15 @@ class Console:
         self.tg.send_lines(chat_id, lines)
 
     def cmd_info(self, chat_id):
-        lines = [f"poll interval: {self.poll_interval}s",
-                 f"last ping: {_format_ts(self.pinger_bot.last_ping)}",
-                 f"next ping: {_format_ts(self.pinger_bot.next_ping)}"]
+        lines = [f"<b>last ping:</b> {_format_ts(self.pinger_bot.last_ping)}",
+                 f"<b>next ping:</b> {_format_ts(self.pinger_bot.next_ping)}",
+                 "",
+                 f"<b>poll interval:</b> {self.poll_interval}s",
+                 ""]
 
         for r in self.repos:
-            lines.append(f"{r.repo} (last sync: {_format_ts(self.watcher_bot.last_sync.get(r.repo))}):")
-            lines += [f"  {p}" for p in r.paths]
+            lines.append(f"<b>{r.repo}</b> (synced up to: {_format_ts(self.watcher_bot.since.get(r.repo))}):")
+            lines += [f"  {html.escape(p)}" for p in r.paths] + [""]
 
         self.tg.send_lines(chat_id, lines)
 

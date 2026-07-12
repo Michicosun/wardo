@@ -9,6 +9,8 @@ from ..clients import github, telegram
 
 log = logging.getLogger("wardo.watcher")
 
+SINCE_SAFETY_MARGIN = datetime.timedelta(hours=1)
+
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc)
@@ -37,8 +39,9 @@ class Watcher:
         self.repos = cfg.wardo.repositories
         self.poll_interval = cfg.wardo.poll_interval
         self.owner_id = cfg.wardo.allowed_user_id
-        self.since = {r.repo: now() for r in self.repos}
-        self.last_sync = {}
+        self.boot = now()
+        self.since = {r.repo: self.boot for r in self.repos}
+        self.notified = {r.repo: {} for r in self.repos}
 
     def _round(self):
         started = now()
@@ -46,15 +49,24 @@ class Watcher:
         log.info("started watcher round at %s", started)
         for r in self.repos:
             try:
-                for pr in self.gh.new_prs(r.repo, self.since[r.repo]):
-                    if not is_pr_watched(pr, r.paths):
+                seen = self.notified[r.repo]
+                for pr in self.gh.new_prs(r.repo, self.since[r.repo] - SINCE_SAFETY_MARGIN):
+                    if pr.number in seen:
+                        continue
+
+                    seen[pr.number] = pr.created_at
+
+                    if pr.created_at <= self.boot or not is_pr_watched(pr, r.paths):
                         continue
 
                     log.info("new PR #%s in %s", pr.number, r.repo)
                     self.tg.send(self.owner_id, new_pr_message(r.repo, pr))
 
                 self.since[r.repo] = started
-                self.last_sync[r.repo] = now()
+
+                horizon = started - SINCE_SAFETY_MARGIN
+                self.notified[r.repo] = {n: ts for n, ts in seen.items() if ts >= horizon}
+                log.info("updated %s", r.repo)
 
             except Exception:
                 log.exception("poll failed for %s", r.repo)
