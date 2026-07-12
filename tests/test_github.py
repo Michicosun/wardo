@@ -54,6 +54,7 @@ def test_parse_pr():
         "number": 7, "title": "T", "url": "https://github.com/x/y/pull/7",
         "createdAt": "2026-07-10T00:00:00Z", "updatedAt": "2026-07-10T01:00:00Z", "closedAt": None, "mergedAt": None,
         "author": None,
+        "labels": {"nodes": [{"name": "pr-bugfix"}]},
         "files": {"nodes": [{"path": "src/a.py"}]},
     }
     pr = github._parse_pr(raw)
@@ -61,3 +62,4 @@ def test_parse_pr():
     assert pr.author == "ghost"
     assert pr.merged_at is None
     assert pr.files == ["src/a.py"]
+    assert pr.labels == ["pr-bugfix"]

@@ -6,7 +6,7 @@ CFG = config.Config(
     github=config.GithubConfig(token="x"),
     telegram=config.TelegramConfig(token="y"),
     wardo=config.WardoConfig(poll_interval=5, ping_schedule="0 9 * * *", allowed_user_id=42,
-                             repositories=[config.Repository(repo="x/y", paths=["src/"], title_filters=[])]),
+                             repositories=[config.Repository(repo="x/y", paths=["src/"], title_filters=[], label_filters=[])]),
 )
 
 
@@ -57,11 +57,22 @@ def test_is_title_filtered(node):
     assert not utils._is_title_filtered(pr, ["revert"])
 
 
+def test_is_label_filtered(node):
+    pr = node(labels=["pr-backport", "ci-fail"])
+    assert not utils._is_label_filtered(pr, [])
+    assert utils._is_label_filtered(pr, ["backport"])
+    assert utils._is_label_filtered(pr, [r"^ci-"])
+    assert not utils._is_label_filtered(pr, ["documentation"])
+    assert not utils._is_label_filtered(node(labels=[]), ["backport"])
+
+
 def test_is_pr_matched(node):
-    repo = config.Repository(repo="x/y", paths=["src/"], title_filters=["^Backport"])
+    repo = config.Repository(repo="x/y", paths=["src/"], title_filters=["^Backport"],
+                             label_filters=["do-not-notify"])
     assert utils.is_pr_matched(node(title="Fix things"), repo)
     assert not utils.is_pr_matched(node(title="Backport #1: Fix things"), repo)
     assert not utils.is_pr_matched(node(title="Fix things", files=["docs/a.md"]), repo)
+    assert not utils.is_pr_matched(node(title="Fix things", labels=["do-not-notify"]), repo)
 
 
 def test_round_notifies_watched_pr_once(node, monkeypatch):

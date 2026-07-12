@@ -5,7 +5,7 @@ CFG = config.Config(
     github=config.GithubConfig(token="x"),
     telegram=config.TelegramConfig(token="y"),
     wardo=config.WardoConfig(poll_interval=5, ping_schedule="0 9 * * *", allowed_user_id=42,
-                             repositories=[config.Repository(repo="x/y", paths=["src/"], title_filters=[])]),
+                             repositories=[config.Repository(repo="x/y", paths=["src/"], title_filters=[], label_filters=[])]),
 )
 
 
