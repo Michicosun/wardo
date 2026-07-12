@@ -84,6 +84,8 @@ class Console:
                 self.cmd_open(chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/merged":
                 self.cmd_merged(chat_id, parts[1] if len(parts) > 1 else "")
+            elif cmd == "/closed":
+                self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/info":
                 self.cmd_info(chat_id)
             elif cmd in ("/start", "/help"):
@@ -108,9 +110,17 @@ class Console:
             header = f"<b>{r.repo}</b> — PRs merged in watched paths in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.merged_prs(r.repo, cutoff), r)
 
+    def cmd_closed(self, chat_id, arg):
+        days = _parse_days(arg)
+        cutoff = utils.now() - datetime.timedelta(days=days)
+        for r in self.repos:
+            header = f"<b>{r.repo}</b> — PRs closed without merge in watched paths in the last {days} day(s):"
+            self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r)
+
     def cmd_help(self, chat_id):
         lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
                  "/merged [days] — PRs merged in the last [days] days (default 1)",
+                 "/closed [days] — PRs closed without merge in the last [days] days (default 1)",
                  "/info — watched repositories and settings",
                  "/help — this message"]
 

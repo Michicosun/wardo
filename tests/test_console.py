@@ -137,3 +137,13 @@ def test_merged(node):
     assert (utils.now() - seen["cutoff"]).days == 7
     assert "merged" in b.tg.sent[0][1] and "last 7 day(s)" in b.tg.sent[0][1]
     assert b.tg.sent[1][1] == "Nothing found"
+
+
+def test_closed(node):
+    b = make_bot()
+    seen = {}
+    b.gh.closed_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
+    b.handle(msg(42, "/closed 7"))
+    assert (utils.now() - seen["cutoff"]).days == 7
+    assert "closed without merge" in b.tg.sent[0][1] and "last 7 day(s)" in b.tg.sent[0][1]
+    assert b.tg.sent[1][1] == "Nothing found"
