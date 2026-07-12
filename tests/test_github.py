@@ -13,18 +13,6 @@ class FakeGH(github.GitHub):
         yield from self.nodes
 
 
-def test_new_prs_filters_by_created_at(node):
-    cutoff = github._parse_ts("2026-07-10T11:00:00Z")
-    gh = FakeGH([
-        node(number=3, created="2026-07-10T12:30:00Z"),
-        node(number=2, created="2026-07-10T11:30:00Z"),
-        node(number=1, created="2026-07-10T10:30:00Z"),
-    ])
-    result = list(gh.new_prs("x/y", cutoff))
-    assert [pr.number for pr in result] == [3, 2]
-    assert gh.queries == ["repo:x/y is:pr created:>=2026-07-10T11:00:00+00:00 sort:created-desc"]
-
-
 def test_open_prs_filters_by_created_at(node):
     cutoff = github._parse_ts("2026-07-04T00:00:00Z")
     gh = FakeGH([
@@ -37,14 +25,14 @@ def test_open_prs_filters_by_created_at(node):
     assert gh.queries == ["repo:x/y is:pr is:open created:>=2026-07-04T00:00:00+00:00 sort:created-desc"]
 
 
-def test_closed_prs_filters_by_merged_at(node):
+def test_merged_prs_filters_by_merged_at(node):
     cutoff = github._parse_ts("2026-07-04T00:00:00Z")
     gh = FakeGH([
         node(number=3, merged="2026-07-05T00:00:00Z"),
         node(number=5, merged="2026-07-10T00:00:00Z"),
         node(number=2, merged="2026-07-01T00:00:00Z"),
     ])
-    result = list(gh.closed_prs("x/y", cutoff))
+    result = list(gh.merged_prs("x/y", cutoff))
     assert [pr.number for pr in result] == [3, 5]
     assert gh.queries == ["repo:x/y is:pr is:merged merged:>=2026-07-04T00:00:00+00:00 sort:updated-desc"]
 

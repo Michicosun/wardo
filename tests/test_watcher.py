@@ -23,8 +23,8 @@ def make_watcher(monkeypatch):
     w = watcher.Watcher(CFG)
     w.tg = FakeTG()
     w.boot = github._parse_ts("2026-07-01T00:00:00Z")
-    w.gh.new_prs = lambda repo, cutoff: []
-    w.gh.closed_prs = lambda repo, cutoff: []
+    w.gh.open_prs = lambda repo, cutoff: []
+    w.gh.merged_prs = lambda repo, cutoff: []
     return w
 
 
@@ -65,7 +65,7 @@ def test_is_pr_matched(node):
 
 def test_round_notifies_watched_pr_once(node, monkeypatch):
     w = make_watcher(monkeypatch)
-    w.gh.new_prs = lambda repo, cutoff: [node(number=7), node(number=8, files=["docs/x.md"])]
+    w.gh.open_prs = lambda repo, cutoff: [node(number=7), node(number=8, files=["docs/x.md"])]
 
     w._round()
     w._round()
@@ -77,7 +77,7 @@ def test_round_notifies_watched_pr_once(node, monkeypatch):
 
 def test_round_notifies_merged_pr_once(node, monkeypatch):
     w = make_watcher(monkeypatch)
-    w.gh.closed_prs = lambda repo, cutoff: [node(number=9, merged="2026-07-10T00:30:00Z")]
+    w.gh.merged_prs = lambda repo, cutoff: [node(number=9, merged="2026-07-10T00:30:00Z")]
 
     w._round()
     w._round()
@@ -89,7 +89,7 @@ def test_round_notifies_merged_pr_once(node, monkeypatch):
 def test_round_pads_since_with_safety_margin(monkeypatch):
     w = make_watcher(monkeypatch)
     seen = {}
-    w.gh.new_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
+    w.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
 
     w._round()
 
@@ -99,7 +99,7 @@ def test_round_pads_since_with_safety_margin(monkeypatch):
 def test_round_skips_prs_created_before_boot(node, monkeypatch):
     w = make_watcher(monkeypatch)
     w.boot = github._parse_ts("2026-07-10T01:00:00Z")
-    w.gh.new_prs = lambda repo, since: [node(number=7, created="2026-07-09T00:00:00Z")]
+    w.gh.open_prs = lambda repo, since: [node(number=7, created="2026-07-09T00:00:00Z")]
 
     w._round()
 

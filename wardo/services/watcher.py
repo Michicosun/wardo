@@ -53,8 +53,8 @@ class Watcher:
         for r in self.repos:
             try:
                 cutoff = self.since[r.repo] - SINCE_SAFETY_MARGIN
-                self._notify(r, self.gh.new_prs(r.repo, cutoff), self.notified_open[r.repo], lambda pr: pr.created_at, "🆕 New PR")
-                self._notify(r, self.gh.closed_prs(r.repo, cutoff), self.notified_merged[r.repo], lambda pr: pr.merged_at, "🔀 Merged PR")
+                self._notify(r, self.gh.open_prs(r.repo, cutoff), self.notified_open[r.repo], lambda pr: pr.created_at, "🆕 New PR")
+                self._notify(r, self.gh.merged_prs(r.repo, cutoff), self.notified_merged[r.repo], lambda pr: pr.merged_at, "🔀 Merged PR")
 
                 horizon = started - SINCE_SAFETY_MARGIN
                 self.since[r.repo] = started

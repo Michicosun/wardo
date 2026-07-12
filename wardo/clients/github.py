@@ -87,19 +87,13 @@ class GitHub:
 
             cursor = found["pageInfo"]["endCursor"]
 
-    def new_prs(self, repo, cutoff):
-        q = f"repo:{repo} is:pr created:>={_fmt_search_ts(cutoff)} sort:created-desc"
-        for pr in self._search_prs(q):
-            if pr.created_at >= cutoff:
-                yield pr
-
     def open_prs(self, repo, cutoff):
         q = f"repo:{repo} is:pr is:open created:>={_fmt_search_ts(cutoff)} sort:created-desc"
         for pr in self._search_prs(q):
             if pr.created_at >= cutoff:
                 yield pr
 
-    def closed_prs(self, repo, cutoff):
+    def merged_prs(self, repo, cutoff):
         q = f"repo:{repo} is:pr is:merged merged:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.merged_at and pr.merged_at >= cutoff:
