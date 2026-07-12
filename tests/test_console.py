@@ -1,3 +1,5 @@
+import pytest
+
 from wardo.config import config
 from wardo.services import console, pinger, utils, watcher
 
@@ -36,15 +38,18 @@ def test_unauthorized():
     assert b.tg.sent == [(7, "Unauthorized access.")]
 
 
-def test_help():
+def test_help_and_unknown_command():
     b = make_bot()
     b.handle(msg(42, "/help"))
     text = b.tg.sent[0][1]
-    assert "/open" in text and "/merged" in text and "/info" in text
+    assert "/open" in text and "/merged" in text and "/closed" in text and "/info" in text
     assert "x/y" not in text
 
+    b.handle(msg(42, "hello"))
+    assert "Unknown command" in b.tg.sent[1][1]
 
-def test_info():
+
+def test_info(monkeypatch):
     b = make_bot()
     b.handle(msg(42, "/info"))
     text = b.tg.sent[0][1]
@@ -52,31 +57,16 @@ def test_info():
     assert "<b>last ping:</b> never" in text
     assert "<b>next ping:</b>" in text and "<b>next ping:</b> never" not in text
     assert "<b>x/y</b> (up to:" in text and "src/" in text
+    assert "title filters:" not in text and "label filters:" not in text
 
-
-def test_info_shows_title_filters(monkeypatch):
-    b = make_bot()
-    b.handle(msg(42, "/info"))
-    assert "title filters:" not in b.tg.sent[0][1]
-
-    monkeypatch.setattr(b.repos[0], "title_filters", ["^Backport"])
-    b.handle(msg(42, "/info"))
-    assert "title filters:" in b.tg.sent[1][1] and "^Backport" in b.tg.sent[1][1]
-
-
-def test_info_with_activity():
-    b = make_bot()
     b.pinger_bot.last_ping = utils.now()
+    monkeypatch.setattr(b.repos[0], "title_filters", ["^Backport"])
+    monkeypatch.setattr(b.repos[0], "label_filters", ["pr-backport"])
     b.handle(msg(42, "/info"))
-    text = b.tg.sent[0][1]
-    assert "never" not in text
-    assert text.count("UTC") == 3
-
-
-def test_unknown_command():
-    b = make_bot()
-    b.handle(msg(42, "hello"))
-    assert "Unknown command" in b.tg.sent[0][1]
+    text = b.tg.sent[1][1]
+    assert "never" not in text and text.count("UTC") == 3
+    assert "title filters:" in text and "^Backport" in text
+    assert "label filters:" in text and "pr-backport" in text
 
 
 def test_parse_days():
@@ -98,14 +88,25 @@ def test_open(node):
     assert "alice" in row and "https://github.com/x/y/pull/1" in row
     assert b.tg.sent[2][1] == "Search finished. Processed 1 PRs"
 
-
-def test_open_with_days(node):
-    b = make_bot()
-    seen = {}
+    seen.clear()
     b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
     b.handle(msg(42, "/open 7"))
     assert (utils.now() - seen["cutoff"]).days == 7
-    assert "last 7 day(s)" in b.tg.sent[0][1]
+    assert "last 7 day(s)" in b.tg.sent[3][1]
+    assert b.tg.sent[4][1] == "Nothing found"
+
+
+@pytest.mark.parametrize("cmd, method, phrase", [
+    ("/merged 7", "merged_prs", "merged"),
+    ("/closed 7", "closed_prs", "closed without merge"),
+])
+def test_merged_and_closed(node, cmd, method, phrase):
+    b = make_bot()
+    seen = {}
+    setattr(b.gh, method, lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and [])
+    b.handle(msg(42, cmd))
+    assert (utils.now() - seen["cutoff"]).days == 7
+    assert phrase in b.tg.sent[0][1] and "last 7 day(s)" in b.tg.sent[0][1]
     assert b.tg.sent[1][1] == "Nothing found"
 
 
@@ -119,15 +120,6 @@ def test_progress_reports(node):
     assert texts[-1] == "Nothing found"
 
 
-def test_open_bad_arg_falls_back_to_default(node):
-    b = make_bot()
-    seen = {}
-    b.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
-    b.handle(msg(42, "/open nope"))
-    assert (utils.now() - seen["cutoff"]).days == 1
-    assert "last 1 day(s)" in b.tg.sent[0][1]
-
-
 def test_command_failure_is_reported(node):
     b = make_bot()
 
@@ -137,23 +129,3 @@ def test_command_failure_is_reported(node):
     b.gh.open_prs = boom
     b.handle(msg(42, "/open"))
     assert b.tg.sent[-1][1] == "Command failed: github down"
-
-
-def test_merged(node):
-    b = make_bot()
-    seen = {}
-    b.gh.merged_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
-    b.handle(msg(42, "/merged 7"))
-    assert (utils.now() - seen["cutoff"]).days == 7
-    assert "merged" in b.tg.sent[0][1] and "last 7 day(s)" in b.tg.sent[0][1]
-    assert b.tg.sent[1][1] == "Nothing found"
-
-
-def test_closed(node):
-    b = make_bot()
-    seen = {}
-    b.gh.closed_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
-    b.handle(msg(42, "/closed 7"))
-    assert (utils.now() - seen["cutoff"]).days == 7
-    assert "closed without merge" in b.tg.sent[0][1] and "last 7 day(s)" in b.tg.sent[0][1]
-    assert b.tg.sent[1][1] == "Nothing found"

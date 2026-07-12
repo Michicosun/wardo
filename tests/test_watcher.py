@@ -1,3 +1,5 @@
+import pytest
+
 from wardo.clients import github
 from wardo.config import config
 from wardo.services import utils, watcher
@@ -29,87 +31,47 @@ def make_watcher(monkeypatch):
     return w
 
 
-def test_is_pr_watched_prefix(node):
-    pr = node(files=["src/a.py", "docs/b.md", "src/deep/c.py"])
-    assert utils._is_pr_watched(pr, ["src/", "lib/"])
-    assert utils._is_pr_watched(pr, ["docs/"])
-    assert not utils._is_pr_watched(pr, ["lib/"])
-
-
-def test_is_pr_watched_substring(node):
-    pr = node(files=["src/Processors/QueryPlan/Optimizations/foo.cpp"])
-    assert utils._is_pr_watched(pr, ["QueryPlan"])
-    assert not utils._is_pr_watched(pr, ["MergeTree"])
-
-
-def test_is_pr_watched_regex(node):
-    pr = node(files=["src/Storages/MergeTree/MergeTreeData.cpp"])
-    assert utils._is_pr_watched(pr, [r"MergeTree.*\.cpp$"])
-    assert utils._is_pr_watched(pr, [r"^src/(Storages|Processors)/"])
-    assert not utils._is_pr_watched(pr, [r"\.py$"])
-
-
-def test_is_title_filtered(node):
-    pr = node(title="Backport #123 to 24.3: Fix sorting")
-    assert not utils._is_title_filtered(pr, [])
-    assert utils._is_title_filtered(pr, ["Backport"])
-    assert utils._is_title_filtered(pr, [r"^Backport #\d+"])
-    assert not utils._is_title_filtered(pr, ["revert"])
-
-
-def test_is_label_filtered(node):
-    pr = node(labels=["pr-backport", "ci-fail"])
-    assert not utils._is_label_filtered(pr, [])
-    assert utils._is_label_filtered(pr, ["backport"])
-    assert utils._is_label_filtered(pr, [r"^ci-"])
-    assert not utils._is_label_filtered(pr, ["documentation"])
-    assert not utils._is_label_filtered(node(labels=[]), ["backport"])
-
-
 def test_is_pr_matched(node):
-    repo = config.Repository(repo="x/y", paths=["src/"], title_filters=["^Backport"],
-                             label_filters=["do-not-notify"])
-    assert utils.is_pr_matched(node(title="Fix things"), repo)
-    assert not utils.is_pr_matched(node(title="Backport #1: Fix things"), repo)
-    assert not utils.is_pr_matched(node(title="Fix things", files=["docs/a.md"]), repo)
-    assert not utils.is_pr_matched(node(title="Fix things", labels=["do-not-notify"]), repo)
+    repo = config.Repository(repo="x/y",
+                             paths=["src/", "QueryPlan", r"\.cpp$"],
+                             title_filters=["^Backport", "Sync"],
+                             label_filters=["backport", r"^ci-"])
+
+    assert utils.is_pr_matched(node(files=["src/a.py"]), repo)
+    assert utils.is_pr_matched(node(files=["lib/QueryPlan/opt.h"]), repo)
+    assert utils.is_pr_matched(node(files=["lib/Data.cpp"]), repo)
+    assert not utils.is_pr_matched(node(files=["docs/readme.md"]), repo)
+
+    assert not utils.is_pr_matched(node(title="Backport #1: Fix"), repo)
+    assert not utils.is_pr_matched(node(title="Auto Sync files"), repo)
+    assert utils.is_pr_matched(node(title="Fix Backport logic"), repo)
+
+    assert not utils.is_pr_matched(node(labels=["pr-backport"]), repo)
+    assert not utils.is_pr_matched(node(labels=["ci-fail"]), repo)
+    assert utils.is_pr_matched(node(labels=["documentation"]), repo)
+
+    bare = config.Repository(repo="x/y", paths=["src/"], title_filters=[], label_filters=[])
+    assert utils.is_pr_matched(node(title="Backport", labels=["pr-backport"]), bare)
 
 
-def test_round_notifies_watched_pr_once(node, monkeypatch):
+@pytest.mark.parametrize("method, extra, event", [
+    ("open_prs", {}, "New PR"),
+    ("merged_prs", {"merged": "2026-07-10T00:30:00Z"}, "Merged PR"),
+    ("closed_prs", {"closed": "2026-07-10T00:30:00Z"}, "Closed PR"),
+])
+def test_round_notifies_matched_pr_once(node, monkeypatch, method, extra, event):
     w = make_watcher(monkeypatch)
-    w.gh.open_prs = lambda repo, cutoff: [node(number=7), node(number=8, files=["docs/x.md"])]
+    prs = [node(number=7, **extra), node(number=8, files=["docs/x.md"], **extra)]
+    setattr(w.gh, method, lambda repo, cutoff: prs)
 
     w._round()
     w._round()
 
     texts = [t for _, t in w.tg.sent]
-    assert len(texts) == 1 and "pull/7" in texts[0] and "New PR" in texts[0]
-    assert w.since["x/y"] == github._parse_ts("2026-07-10T01:00:00Z")
+    assert len(texts) == 1 and "pull/7" in texts[0] and event in texts[0]
 
 
-def test_round_notifies_merged_pr_once(node, monkeypatch):
-    w = make_watcher(monkeypatch)
-    w.gh.merged_prs = lambda repo, cutoff: [node(number=9, merged="2026-07-10T00:30:00Z")]
-
-    w._round()
-    w._round()
-
-    texts = [t for _, t in w.tg.sent]
-    assert len(texts) == 1 and "pull/9" in texts[0] and "Merged PR" in texts[0]
-
-
-def test_round_notifies_closed_pr_once(node, monkeypatch):
-    w = make_watcher(monkeypatch)
-    w.gh.closed_prs = lambda repo, cutoff: [node(number=11, closed="2026-07-10T00:30:00Z")]
-
-    w._round()
-    w._round()
-
-    texts = [t for _, t in w.tg.sent]
-    assert len(texts) == 1 and "pull/11" in texts[0] and "Closed PR" in texts[0]
-
-
-def test_round_pads_since_with_safety_margin(monkeypatch):
+def test_round_pads_cutoff_and_advances_since(monkeypatch):
     w = make_watcher(monkeypatch)
     seen = {}
     w.gh.open_prs = lambda repo, cutoff: seen.setdefault("cutoff", cutoff) and []
@@ -117,12 +79,13 @@ def test_round_pads_since_with_safety_margin(monkeypatch):
     w._round()
 
     assert seen["cutoff"] == github._parse_ts("2026-07-10T00:00:00Z")
+    assert w.since["x/y"] == github._parse_ts("2026-07-10T01:00:00Z")
 
 
 def test_round_skips_prs_created_before_boot(node, monkeypatch):
     w = make_watcher(monkeypatch)
     w.boot = github._parse_ts("2026-07-10T01:00:00Z")
-    w.gh.open_prs = lambda repo, since: [node(number=7, created="2026-07-09T00:00:00Z")]
+    w.gh.open_prs = lambda repo, cutoff: [node(number=7, created="2026-07-09T00:00:00Z")]
 
     w._round()
 

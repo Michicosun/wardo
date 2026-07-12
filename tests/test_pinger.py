@@ -19,25 +19,24 @@ class FakeTG:
         self.sent.append((chat_id, text))
 
 
-def test_ping():
+class BrokenTG:
+    def send(self, chat_id, text):
+        raise RuntimeError("network down")
+
+
+def test_ping_updates_last_ping_only_on_success():
     p = pinger.Pinger(CFG)
     p.tg = FakeTG()
     assert p.last_ping is None
+
     p._ping()
     assert p.tg.sent == [(42, pinger.PING_TEXT)]
-    assert p.last_ping is not None
-
-
-def test_ping_failure_is_contained():
-    p = pinger.Pinger(CFG)
-
-    class BrokenTG:
-        def send(self, chat_id, text):
-            raise RuntimeError("network down")
+    first = p.last_ping
+    assert first is not None
 
     p.tg = BrokenTG()
     p._ping()
-    assert p.last_ping is None
+    assert p.last_ping == first
 
 
 def test_schedule_follows_cron():
