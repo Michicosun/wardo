@@ -37,10 +37,22 @@ def test_merged_prs_filters_by_merged_at(node):
     assert gh.queries == ["repo:x/y is:pr is:merged merged:>=2026-07-04T00:00:00+00:00 sort:updated-desc"]
 
 
+def test_closed_prs_filters_by_closed_at(node):
+    cutoff = github._parse_ts("2026-07-04T00:00:00Z")
+    gh = FakeGH([
+        node(number=3, closed="2026-07-05T00:00:00Z"),
+        node(number=4, merged="2026-07-06T00:00:00Z"),
+        node(number=2, closed="2026-07-01T00:00:00Z"),
+    ])
+    result = list(gh.closed_prs("x/y", cutoff))
+    assert [pr.number for pr in result] == [3]
+    assert gh.queries == ["repo:x/y is:pr is:closed is:unmerged closed:>=2026-07-04T00:00:00+00:00 sort:updated-desc"]
+
+
 def test_parse_pr():
     raw = {
         "number": 7, "title": "T", "url": "https://github.com/x/y/pull/7",
-        "createdAt": "2026-07-10T00:00:00Z", "updatedAt": "2026-07-10T01:00:00Z", "mergedAt": None,
+        "createdAt": "2026-07-10T00:00:00Z", "updatedAt": "2026-07-10T01:00:00Z", "closedAt": None, "mergedAt": None,
         "author": None,
         "files": {"nodes": [{"path": "src/a.py"}]},
     }

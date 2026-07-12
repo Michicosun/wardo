@@ -23,7 +23,7 @@ def test_ping():
     p = pinger.Pinger(CFG)
     p.tg = FakeTG()
     assert p.last_ping is None
-    p.ping()
+    p._ping()
     assert p.tg.sent == [(42, pinger.PING_TEXT)]
     assert p.last_ping is not None
 
@@ -36,7 +36,7 @@ def test_ping_failure_is_contained():
             raise RuntimeError("network down")
 
     p.tg = BrokenTG()
-    p.ping()
+    p._ping()
     assert p.last_ping is None
 
 

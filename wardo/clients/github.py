@@ -14,7 +14,7 @@ query($q: String!, $pageSize: Int!, $cursor: String) {
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
-        number title url createdAt updatedAt mergedAt
+        number title url createdAt updatedAt closedAt mergedAt
         author { login }
         files(first: 100) { nodes { path } }
       }
@@ -31,6 +31,7 @@ class PRInfo:
     author: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
+    closed_at: datetime.datetime | None
     merged_at: datetime.datetime | None
     files: list[str]
 
@@ -51,6 +52,7 @@ def _parse_pr(node):
         author=(node.get("author") or {}).get("login", "ghost"),
         created_at=_parse_ts(node["createdAt"]),
         updated_at=_parse_ts(node["updatedAt"]),
+        closed_at=_parse_ts(node["closedAt"]) if node["closedAt"] else None,
         merged_at=_parse_ts(node["mergedAt"]) if node["mergedAt"] else None,
         files=[f["path"] for f in node["files"]["nodes"]],
     )
@@ -97,4 +99,10 @@ class GitHub:
         q = f"repo:{repo} is:pr is:merged merged:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.merged_at and pr.merged_at >= cutoff:
+                yield pr
+
+    def closed_prs(self, repo, cutoff):
+        q = f"repo:{repo} is:pr is:closed is:unmerged closed:>={_fmt_search_ts(cutoff)} sort:updated-desc"
+        for pr in self._search_prs(q):
+            if pr.closed_at and not pr.merged_at and pr.closed_at >= cutoff:
                 yield pr

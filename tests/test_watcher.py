@@ -25,6 +25,7 @@ def make_watcher(monkeypatch):
     w.boot = github._parse_ts("2026-07-01T00:00:00Z")
     w.gh.open_prs = lambda repo, cutoff: []
     w.gh.merged_prs = lambda repo, cutoff: []
+    w.gh.closed_prs = lambda repo, cutoff: []
     return w
 
 
@@ -84,6 +85,17 @@ def test_round_notifies_merged_pr_once(node, monkeypatch):
 
     texts = [t for _, t in w.tg.sent]
     assert len(texts) == 1 and "pull/9" in texts[0] and "Merged PR" in texts[0]
+
+
+def test_round_notifies_closed_pr_once(node, monkeypatch):
+    w = make_watcher(monkeypatch)
+    w.gh.closed_prs = lambda repo, cutoff: [node(number=11, closed="2026-07-10T00:30:00Z")]
+
+    w._round()
+    w._round()
+
+    texts = [t for _, t in w.tg.sent]
+    assert len(texts) == 1 and "pull/11" in texts[0] and "Closed PR" in texts[0]
 
 
 def test_round_pads_since_with_safety_margin(monkeypatch):

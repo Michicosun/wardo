@@ -31,6 +31,7 @@ class Watcher:
         self.since = {r.repo: self.boot for r in self.repos}
         self.notified_open = {r.repo: {} for r in self.repos}
         self.notified_merged = {r.repo: {} for r in self.repos}
+        self.notified_closed = {r.repo: {} for r in self.repos}
 
     def _notify(self, r, prs, seen, event_ts, event):
         for pr in prs:
@@ -55,11 +56,13 @@ class Watcher:
                 cutoff = self.since[r.repo] - SINCE_SAFETY_MARGIN
                 self._notify(r, self.gh.open_prs(r.repo, cutoff), self.notified_open[r.repo], lambda pr: pr.created_at, "🆕 New PR")
                 self._notify(r, self.gh.merged_prs(r.repo, cutoff), self.notified_merged[r.repo], lambda pr: pr.merged_at, "🔀 Merged PR")
+                self._notify(r, self.gh.closed_prs(r.repo, cutoff), self.notified_closed[r.repo], lambda pr: pr.closed_at, "❌ Closed PR")
 
                 horizon = started - SINCE_SAFETY_MARGIN
                 self.since[r.repo] = started
                 self.notified_open[r.repo] = _prune(self.notified_open[r.repo], horizon)
                 self.notified_merged[r.repo] = _prune(self.notified_merged[r.repo], horizon)
+                self.notified_closed[r.repo] = _prune(self.notified_closed[r.repo], horizon)
                 log.info("updated %s", r.repo)
 
             except Exception:
