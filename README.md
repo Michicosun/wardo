@@ -38,7 +38,8 @@ By default, Wardo will automatically notify you about new PRs. These commands ar
 
 - `/open [days]` — PRs opened in the last `days` days (default 1) touching watched paths
 - `/closed [days]` — PRs merged in the last `days` days (default 1) touching watched paths
-- `/help` — command list and watched repos
+- `/info` — watched repositories and settings
+- `/help` — command list
 
 ## Tests
 

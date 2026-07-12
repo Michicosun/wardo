@@ -40,7 +40,16 @@ def test_help():
     b = make_bot()
     b.handle(msg(42, "/help"))
     text = b.tg.sent[0][1]
-    assert "/open" in text and "/closed" in text and "x/y" in text
+    assert "/open" in text and "/closed" in text and "/info" in text
+    assert "x/y" not in text
+
+
+def test_info():
+    b = make_bot()
+    b.handle(msg(42, "/info"))
+    text = b.tg.sent[0][1]
+    assert "poll interval: 5s" in text
+    assert "x/y" in text and "src/" in text
 
 
 def test_unknown_command():

@@ -90,6 +90,8 @@ class Console:
                 self.cmd_open(chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/closed":
                 self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
+            elif cmd == "/info":
+                self.cmd_info(chat_id)
             elif cmd in ("/start", "/help"):
                 self.cmd_help(chat_id)
             else:
@@ -115,9 +117,13 @@ class Console:
     def cmd_help(self, chat_id):
         lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
                  "/closed [days] — PRs merged in the last [days] days (default 1)",
-                 "/help — this message",
-                 "",
-                 f"poll interval: {self.poll_interval}s"]
+                 "/info — watched repositories and settings",
+                 "/help — this message"]
+
+        self.tg.send_lines(chat_id, lines)
+
+    def cmd_info(self, chat_id):
+        lines = [f"poll interval: {self.poll_interval}s"]
 
         for r in self.repos:
             lines.append(f"{r.repo}:")
