@@ -38,6 +38,7 @@ class Watcher:
         self.poll_interval = cfg.wardo.poll_interval
         self.owner_id = cfg.wardo.allowed_user_id
         self.since = {r.repo: now() for r in self.repos}
+        self.last_sync = {}
 
     def _round(self):
         started = now()
@@ -53,6 +54,7 @@ class Watcher:
                     self.tg.send(self.owner_id, new_pr_message(r.repo, pr))
 
                 self.since[r.repo] = started
+                self.last_sync[r.repo] = now()
 
             except Exception:
                 log.exception("poll failed for %s", r.repo)

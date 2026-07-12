@@ -22,6 +22,10 @@ def pr_line(pr):
     return f"{link(pr)} — {pr.author}"
 
 
+def _format_ts(ts):
+    return ts.strftime("%Y-%m-%d %H:%M:%S UTC") if ts else "never"
+
+
 def _parse_days(arg):
     try:
         days = int(arg)
@@ -39,12 +43,14 @@ def _unpack_request_msg(msg):
 
 
 class Console:
-    def __init__(self, cfg):
+    def __init__(self, cfg, watcher_bot, pinger_bot):
         self.gh = github.GitHub(cfg.github)
         self.tg = telegram.Telegram(cfg.telegram)
         self.repos = cfg.wardo.repositories
         self.poll_interval = cfg.wardo.poll_interval
         self.owner_id = cfg.wardo.allowed_user_id
+        self.watcher_bot = watcher_bot
+        self.pinger_bot = pinger_bot
 
     def _stream_prs(self, chat_id, header, prs, paths):
         self.tg.send(chat_id, header)
@@ -123,10 +129,12 @@ class Console:
         self.tg.send_lines(chat_id, lines)
 
     def cmd_info(self, chat_id):
-        lines = [f"poll interval: {self.poll_interval}s"]
+        lines = [f"poll interval: {self.poll_interval}s",
+                 f"last ping: {_format_ts(self.pinger_bot.last_ping)}",
+                 f"next ping: {_format_ts(self.pinger_bot.next_ping)}"]
 
         for r in self.repos:
-            lines.append(f"{r.repo}:")
+            lines.append(f"{r.repo} (last sync: {_format_ts(self.watcher_bot.last_sync.get(r.repo))}):")
             lines += [f"  {p}" for p in r.paths]
 
         self.tg.send_lines(chat_id, lines)

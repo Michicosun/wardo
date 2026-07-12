@@ -9,6 +9,12 @@ logging.basicConfig(level=logging.INFO,
                     stream=sys.stdout)
 
 cfg = config.load(sys.argv[1] if len(sys.argv) > 1 else "config.yaml")
-watcher.Watcher(cfg).start()
-pinger.Pinger(cfg).start()
-console.Console(cfg).serve()
+
+watcher_bot = watcher.Watcher(cfg)
+watcher_bot.start()
+
+pinger_bot = pinger.Pinger(cfg)
+pinger_bot.start()
+
+console_bot = console.Console(cfg, watcher_bot, pinger_bot)
+console_bot.serve()
