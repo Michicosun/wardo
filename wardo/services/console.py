@@ -10,14 +10,6 @@ log = logging.getLogger("wardo.console")
 PROGRESS_EVERY = 100
 
 
-def _link(pr):
-    return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
-
-
-def _pr_line(pr):
-    return f"{_link(pr)} — {pr.author}"
-
-
 def _format_ts(ts):
     return ts.strftime("%Y-%m-%d %H:%M:%S UTC") if ts else "never"
 
@@ -61,7 +53,7 @@ class Console:
                 continue
 
             found += 1
-            self.tg.send(chat_id, _pr_line(pr))
+            self.tg.send(chat_id, utils.pr_line(pr))
 
         if not found:
             self.tg.send(chat_id, "Nothing found")

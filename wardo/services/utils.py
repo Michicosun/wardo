@@ -1,4 +1,5 @@
 import datetime
+import html
 import re
 
 
@@ -21,6 +22,14 @@ def _is_title_filtered(pr, filters):
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc)
+
+
+def pr_link(pr):
+    return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
+
+
+def pr_line(pr):
+    return f"{pr_link(pr)} — {pr.author}"
 
 
 def is_pr_matched(pr, repo):
