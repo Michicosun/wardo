@@ -22,13 +22,26 @@ class FakeTG:
 def test_ping():
     p = pinger.Pinger(CFG)
     p.tg = FakeTG()
+    assert p.last_ping is None
     p.ping()
     assert p.tg.sent == [(42, pinger.PING_TEXT)]
+    assert p.last_ping is not None
+
+
+def test_ping_failure_is_contained():
+    p = pinger.Pinger(CFG)
+
+    class BrokenTG:
+        def send(self, chat_id, text):
+            raise RuntimeError("network down")
+
+    p.tg = BrokenTG()
+    p.ping()
+    assert p.last_ping is None
 
 
 def test_schedule_follows_cron():
     p = pinger.Pinger(CFG)
-    first = p.schedule.get_next(datetime.datetime)
-    second = p.schedule.get_next(datetime.datetime)
-    assert (first.hour, first.minute) == (9, 0)
-    assert second - first == datetime.timedelta(days=1)
+    assert (p.next_ping.hour, p.next_ping.minute) == (9, 0)
+    following = p.schedule.get_next(datetime.datetime)
+    assert following - p.next_ping == datetime.timedelta(days=1)

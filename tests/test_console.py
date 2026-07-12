@@ -1,5 +1,5 @@
 from wardo.config import config
-from wardo.services import console
+from wardo.services import console, pinger, watcher
 
 CFG = config.Config(
     github=config.GithubConfig(token="x"),
@@ -21,7 +21,7 @@ class FakeTG:
 
 
 def make_bot():
-    b = console.Console(CFG)
+    b = console.Console(CFG, watcher.Watcher(CFG), pinger.Pinger(CFG))
     b.tg = FakeTG()
     return b
 
@@ -49,7 +49,19 @@ def test_info():
     b.handle(msg(42, "/info"))
     text = b.tg.sent[0][1]
     assert "poll interval: 5s" in text
-    assert "x/y" in text and "src/" in text
+    assert "last ping: never" in text
+    assert "next ping:" in text and "next ping: never" not in text
+    assert "x/y (last sync: never):" in text and "src/" in text
+
+
+def test_info_with_activity():
+    b = make_bot()
+    b.watcher_bot.last_sync["x/y"] = console.now()
+    b.pinger_bot.last_ping = console.now()
+    b.handle(msg(42, "/info"))
+    text = b.tg.sent[0][1]
+    assert "never" not in text
+    assert text.count("UTC") == 3
 
 
 def test_unknown_command():

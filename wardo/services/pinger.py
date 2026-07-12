@@ -29,7 +29,12 @@ class Pinger:
 
     def ping(self):
         log.info("ping")
-        self.tg.send(self.owner_id, PING_TEXT)
+        try:
+            self.tg.send(self.owner_id, PING_TEXT)
+        except Exception:
+            log.exception("ping failed")
+            return
+
         self.last_ping = now()
 
     def _loop(self):
