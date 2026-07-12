@@ -135,7 +135,15 @@ class Console:
 
         for r in self.repos:
             lines.append(f"<b>{r.repo}</b> (up to: {_format_ts(self.watcher_bot.since.get(r.repo))}):")
-            lines += [f"  {html.escape(p)}" for p in r.paths] + [""]
+
+            lines.append("  <b>paths:</b>")
+            lines += [f"    {html.escape(str(p))}" for p in r.paths]
+
+            if r.title_filters:
+                lines.append("  <b>title filters:</b>")
+                lines += [f"    {html.escape(str(t))}" for t in r.title_filters]
+
+            lines.append("")
 
         self.tg.send_lines(chat_id, lines)
 

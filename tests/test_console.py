@@ -54,6 +54,16 @@ def test_info():
     assert "<b>x/y</b> (up to:" in text and "src/" in text
 
 
+def test_info_shows_title_filters(monkeypatch):
+    b = make_bot()
+    b.handle(msg(42, "/info"))
+    assert "title filters:" not in b.tg.sent[0][1]
+
+    monkeypatch.setattr(b.repos[0], "title_filters", ["^Backport"])
+    b.handle(msg(42, "/info"))
+    assert "title filters:" in b.tg.sent[1][1] and "^Backport" in b.tg.sent[1][1]
+
+
 def test_info_with_activity():
     b = make_bot()
     b.pinger_bot.last_ping = utils.now()
