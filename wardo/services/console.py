@@ -143,6 +143,10 @@ class Console:
                 lines.append("  <b>title filters:</b>")
                 lines += [f"    {html.escape(str(t))}" for t in r.title_filters]
 
+            if r.label_filters:
+                lines.append("  <b>label filters:</b>")
+                lines += [f"    {html.escape(str(t))}" for t in r.label_filters]
+
             lines.append("")
 
         self.tg.send_lines(chat_id, lines)

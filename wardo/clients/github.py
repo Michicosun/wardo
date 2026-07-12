@@ -16,6 +16,7 @@ query($q: String!, $pageSize: Int!, $cursor: String) {
       ... on PullRequest {
         number title url createdAt updatedAt closedAt mergedAt
         author { login }
+        labels(first: 100) { nodes { name } }
         files(first: 100) { nodes { path } }
       }
     }
@@ -34,6 +35,7 @@ class PRInfo:
     closed_at: datetime.datetime | None
     merged_at: datetime.datetime | None
     files: list[str]
+    labels: list[str]
 
 
 def _parse_ts(s):
@@ -55,6 +57,7 @@ def _parse_pr(node):
         closed_at=_parse_ts(node["closedAt"]) if node["closedAt"] else None,
         merged_at=_parse_ts(node["mergedAt"]) if node["mergedAt"] else None,
         files=[f["path"] for f in node["files"]["nodes"]],
+        labels=[l["name"] for l in node["labels"]["nodes"]],
     )
 
 

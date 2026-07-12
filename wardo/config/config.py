@@ -8,6 +8,7 @@ class Repository:
     repo: str
     paths: list[str]
     title_filters: list[str]
+    label_filters: list[str]
 
 
 @dataclasses.dataclass
@@ -54,7 +55,8 @@ def load(path = "config.yaml"):
             allowed_user_id=int(w["allowed_user_id"]),
             repositories=[Repository(repo=r["repo"],
                                      paths=list(r["paths"]),
-                                     title_filters=list(r.get("title_filters", list())))
+                                     title_filters=list(r.get("title_filters", list())),
+                                     label_filters=list(r.get("label_filters", list())))
                           for r in w["repositories"]],
         ),
     )

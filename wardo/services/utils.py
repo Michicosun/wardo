@@ -20,6 +20,15 @@ def _is_title_filtered(pr, filters):
     return False
 
 
+def _is_label_filtered(pr, filters):
+    for label in pr.labels:
+        for label_filter in filters:
+            if re.search(label_filter, label):
+                return True
+
+    return False
+
+
 def now():
     return datetime.datetime.now(datetime.timezone.utc)
 
@@ -33,4 +42,6 @@ def pr_line(pr):
 
 
 def is_pr_matched(pr, repo):
-    return _is_pr_watched(pr, repo.paths) and not _is_title_filtered(pr, repo.title_filters)
+    return (_is_pr_watched(pr, repo.paths)
+            and not _is_title_filtered(pr, repo.title_filters)
+            and not _is_label_filtered(pr, repo.label_filters))
