@@ -4,18 +4,19 @@ import logging
 import re
 
 from ..clients import github, telegram
-from . import utils
+from ..config import config
+from . import pinger, watcher, utils
 
 log = logging.getLogger("wardo.console")
 
 PROGRESS_EVERY = 100
 
 
-def _format_ts(ts):
+def _format_ts(ts: datetime.datetime | None) -> str:
     return ts.strftime("%Y-%m-%d %H:%M:%S UTC") if ts else "never"
 
 
-def _parse_days(arg):
+def _parse_days(arg: str) -> int:
     try:
         days = int(arg)
     except ValueError:
@@ -24,15 +25,8 @@ def _parse_days(arg):
     return days if days > 0 else 1
 
 
-def _unpack_request_msg(msg):
-    user = msg.get("from", {})
-    chat_id = msg["chat"]["id"]
-    text = (msg.get("text") or "").strip()
-    return user.get("id"), user.get("username"), chat_id, text
-
-
 class Console:
-    def __init__(self, cfg, watcher_bot, pinger_bot):
+    def __init__(self, cfg: config.Config, watcher_bot: watcher.Watcher, pinger_bot: pinger.Pinger) -> None:
         self.gh = github.GitHub(cfg.github)
         self.tg = telegram.Telegram(cfg.telegram)
         self.repos = cfg.wardo.repositories
@@ -61,66 +55,64 @@ class Console:
         else:
             self.tg.send(chat_id, f"Search finished. Processed {processed} PRs")
 
-    def serve(self):
+    def serve(self) -> None:
         for msg in self.tg.updates():
             try:
                 self.handle(msg)
             except Exception:
                 log.exception("failed to handle message")
 
-    def handle(self, msg):
-        uid, username, chat_id, text = _unpack_request_msg(msg)
-
-        if uid != self.owner_id:
-            log.warning("unauthorized access: id=%s username=%s text=%r", uid, username, text)
-            self.tg.send(chat_id, "Unauthorized access.")
+    def handle(self, msg: telegram.Message) -> None:
+        if msg.user_id != self.owner_id:
+            log.warning("unauthorized access: id=%s username=%s text=%r", msg.user_id, msg.username, msg.text)
+            self.tg.send(msg.chat_id, "Unauthorized access.")
             return
 
-        log.info("command from owner: %r", text)
+        log.info("command from owner: %r", msg.text)
 
-        parts = text.split()
+        parts = msg.text.split()
         cmd = parts[0].split("@")[0] if parts else ""
         try:
             if cmd == "/open":
-                self.cmd_open(chat_id, parts[1] if len(parts) > 1 else "")
+                self.cmd_open(msg.chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/merged":
-                self.cmd_merged(chat_id, parts[1] if len(parts) > 1 else "")
+                self.cmd_merged(msg.chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/closed":
-                self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
+                self.cmd_closed(msg.chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/check":
-                self.cmd_check(chat_id, parts[1] if len(parts) > 1 else "")
+                self.cmd_check(msg.chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/info":
-                self.cmd_info(chat_id)
+                self.cmd_info(msg.chat_id)
             elif cmd in ("/start", "/help"):
-                self.cmd_help(chat_id)
+                self.cmd_help(msg.chat_id)
             else:
-                self.cmd_unknown(chat_id)
+                self.cmd_unknown(msg.chat_id)
         except Exception as e:
-            log.exception("command failed: %r", text)
-            self.tg.send(chat_id, f"Command failed: {html.escape(str(e))}")
+            log.exception("command failed: %r", msg.text)
+            self.tg.send(msg.chat_id, f"Command failed: {html.escape(str(e))}")
 
-    def cmd_open(self, chat_id, arg):
+    def cmd_open(self, chat_id: int, arg: str) -> None:
         days = _parse_days(arg)
         cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — open PRs in watched paths created in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.open_prs(r.repo, cutoff), r)
 
-    def cmd_merged(self, chat_id, arg):
+    def cmd_merged(self, chat_id: int, arg: str) -> None:
         days = _parse_days(arg)
         cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — PRs merged in watched paths in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.merged_prs(r.repo, cutoff), r)
 
-    def cmd_closed(self, chat_id, arg):
+    def cmd_closed(self, chat_id: int, arg: str) -> None:
         days = _parse_days(arg)
         cutoff = utils.now() - datetime.timedelta(days=days)
         for r in self.repos:
             header = f"<b>{r.repo}</b> — PRs closed without merge in watched paths in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r)
 
-    def cmd_check(self, chat_id, arg):
+    def cmd_check(self, chat_id: int, arg: str) -> None:
         ref = re.search(r"github\.com/([^/\s]+)/([^/\s]+)/pull/(\d+)", arg)
         if not ref:
             self.tg.send(chat_id, "Usage: /check [pr url]")
@@ -147,7 +139,7 @@ class Console:
 
         self.tg.send_lines(chat_id, lines)
 
-    def cmd_info(self, chat_id):
+    def cmd_info(self, chat_id: int) -> None:
         lines = [f"<b>now:</b> {_format_ts(utils.now())}",
                  f"<b>last ping:</b> {_format_ts(self.pinger_bot.last_ping)}",
                  f"<b>next ping:</b> {_format_ts(self.pinger_bot.next_ping)}",
@@ -173,7 +165,7 @@ class Console:
 
         self.tg.send_lines(chat_id, lines)
 
-    def cmd_help(self, chat_id):
+    def cmd_help(self, chat_id: int) -> None:
         lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
                  "/merged [days] — PRs merged in the last [days] days (default 1)",
                  "/closed [days] — PRs closed without merge in the last [days] days (default 1)",
@@ -183,5 +175,5 @@ class Console:
 
         self.tg.send_lines(chat_id, lines)
 
-    def cmd_unknown(self, chat_id):
+    def cmd_unknown(self, chat_id: int) -> None:
         self.tg.send(chat_id, "Unknown command, try /help")

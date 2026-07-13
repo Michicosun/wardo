@@ -4,6 +4,7 @@ import threading
 import time
 
 from ..clients import github, telegram
+from ..config import config
 from . import utils
 
 log = logging.getLogger("wardo.watcher")
@@ -11,7 +12,7 @@ log = logging.getLogger("wardo.watcher")
 SINCE_SAFETY_MARGIN = datetime.timedelta(hours=1)
 
 
-def _pr_message(event, repo, pr):
+def _pr_message(event: str, repo: str, pr: github.PRInfo) -> str:
     return (f"{event} in {repo}\n"
             f"{utils.pr_line(pr)}")
 
@@ -21,7 +22,7 @@ def _prune(seen, horizon):
 
 
 class Watcher:
-    def __init__(self, cfg):
+    def __init__(self, cfg: config.Config) -> None:
         self.gh = github.GitHub(cfg.github)
         self.tg = telegram.Telegram(cfg.telegram)
         self.repos = cfg.wardo.repositories
@@ -29,9 +30,9 @@ class Watcher:
         self.owner_id = cfg.wardo.allowed_user_id
         self.boot = utils.now()
         self.since = {r.repo: self.boot for r in self.repos}
-        self.notified_open = {r.repo: {} for r in self.repos}
-        self.notified_merged = {r.repo: {} for r in self.repos}
-        self.notified_closed = {r.repo: {} for r in self.repos}
+        self.notified_open: dict[str, dict] = {r.repo: {} for r in self.repos}
+        self.notified_merged: dict[str, dict] = {r.repo: {} for r in self.repos}
+        self.notified_closed: dict[str, dict] = {r.repo: {} for r in self.repos}
 
     def _notify(self, r, prs, seen, event_ts, event):
         for pr in prs:
@@ -47,7 +48,7 @@ class Watcher:
             log.info("%s #%s in %s", event, pr.number, r.repo)
             self.tg.send(self.owner_id, _pr_message(event, r.repo, pr))
 
-    def _round(self):
+    def _round(self) -> None:
         started = utils.now()
 
         log.info("started watcher round at %s", started)
@@ -68,10 +69,10 @@ class Watcher:
             except Exception:
                 log.exception("poll failed for %s", r.repo)
 
-    def _loop(self):
+    def _loop(self) -> None:
         while True:
             self._round()
             time.sleep(self.poll_interval)
 
-    def start(self):
+    def start(self) -> None:
         threading.Thread(target=self._loop, daemon=True).start()

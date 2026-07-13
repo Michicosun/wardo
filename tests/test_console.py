@@ -1,5 +1,6 @@
 import pytest
 
+from wardo.clients import telegram
 from wardo.config import config
 from wardo.services import console, pinger, utils, watcher
 
@@ -29,7 +30,13 @@ def make_bot():
 
 
 def msg(uid, text):
-    return {"from": {"id": uid, "username": "u"}, "chat": {"id": uid}, "text": text}
+    return telegram.Message(user_id=uid, username="u", chat_id=uid, text=text)
+
+
+def test_parse_message():
+    raw = {"from": {"id": 42, "username": "u"}, "chat": {"id": 7}, "text": " /open "}
+    assert telegram._parse_message(raw) == telegram.Message(user_id=42, username="u", chat_id=7, text="/open")
+    assert telegram._parse_message({"chat": {"id": 7}}) == telegram.Message(user_id=None, username=None, chat_id=7, text="")
 
 
 def test_unauthorized():

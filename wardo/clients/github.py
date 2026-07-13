@@ -1,6 +1,8 @@
 import dataclasses
 import datetime
 import logging
+from collections.abc import Iterator
+from typing import Any
 
 from ..config import config
 from . import retries
@@ -48,15 +50,15 @@ class PRInfo:
     labels: list[str]
 
 
-def _parse_ts(s):
+def _parse_ts(s: str) -> datetime.datetime:
     return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-def _fmt_search_ts(ts):
+def _fmt_search_ts(ts: datetime.datetime) -> str:
     return ts.strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 
-def _parse_pr(node):
+def _parse_pr(node: dict[str, Any]) -> PRInfo:
     return PRInfo(
         number=node["number"],
         title=node["title"],
@@ -76,7 +78,7 @@ class GitHub:
         self.api = "https://api.github.com/graphql"
         self.headers = {"Authorization": f"Bearer {cfg.token}"}
 
-    def _graphql(self, query, variables):
+    def _graphql(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
         def call(s):
             r = s.post(self.api, json={"query": query, "variables": variables}, headers=self.headers, timeout=60)
             r.raise_for_status()
@@ -89,7 +91,7 @@ class GitHub:
 
         return data["data"]
 
-    def _search_prs(self, q, page_size=100):
+    def _search_prs(self, q: str, page_size: int = 100) -> Iterator[PRInfo]:
         cursor = None
         while True:
             data = self._graphql(SEARCH_PRS_QUERY, {"q": q, "pageSize": page_size, "cursor": cursor})
@@ -104,25 +106,25 @@ class GitHub:
 
             cursor = found["pageInfo"]["endCursor"]
 
-    def pr(self, repo, number):
+    def pr(self, repo: str, number: int) -> PRInfo | None:
         owner, name = repo.split("/")
         data = self._graphql(PR_QUERY, {"owner": owner, "name": name, "number": number})
         node = data["repository"]["pullRequest"]
         return _parse_pr(node) if node else None
 
-    def open_prs(self, repo, cutoff):
+    def open_prs(self, repo: str, cutoff: datetime.datetime) -> Iterator[PRInfo]:
         q = f"repo:{repo} is:pr is:open created:>={_fmt_search_ts(cutoff)} sort:created-desc"
         for pr in self._search_prs(q):
             if pr.created_at >= cutoff:
                 yield pr
 
-    def merged_prs(self, repo, cutoff):
+    def merged_prs(self, repo: str, cutoff: datetime.datetime) -> Iterator[PRInfo]:
         q = f"repo:{repo} is:pr is:merged merged:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.merged_at and pr.merged_at >= cutoff:
                 yield pr
 
-    def closed_prs(self, repo, cutoff):
+    def closed_prs(self, repo: str, cutoff: datetime.datetime) -> Iterator[PRInfo]:
         q = f"repo:{repo} is:pr is:closed is:unmerged closed:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.closed_at and not pr.merged_at and pr.closed_at >= cutoff:

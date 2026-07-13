@@ -3,8 +3,11 @@ import fnmatch
 import html
 import re
 
+from ..clients import github
+from ..config import config
 
-def _matches_regex(pattern, value):
+
+def _matches_regex(pattern: str, value: str) -> bool:
     try:
         if re.search(pattern, value):
             return True
@@ -14,7 +17,7 @@ def _matches_regex(pattern, value):
     return False
 
 
-def _matches_glob(pattern, value):
+def _matches_glob(pattern: str, value: str) -> bool:
     try:
         if fnmatch.fnmatchcase(value, pattern):
             return True
@@ -24,19 +27,19 @@ def _matches_glob(pattern, value):
     return False
 
 
-def now():
+def now() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def pr_link(pr):
+def pr_link(pr: github.PRInfo) -> str:
     return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
 
 
-def pr_line(pr):
+def pr_line(pr: github.PRInfo) -> str:
     return f"{pr_link(pr)} — {pr.author}"
 
 
-def is_pr_watched(pr, watched):
+def is_pr_watched(pr: github.PRInfo, watched: list[str]) -> bool:
     for changed_file in pr.files:
         for watched_path in watched:
             if _matches_regex(watched_path, changed_file) or _matches_glob(watched_path, changed_file):
@@ -45,7 +48,7 @@ def is_pr_watched(pr, watched):
     return False
 
 
-def is_title_filtered(pr, filters):
+def is_title_filtered(pr: github.PRInfo, filters: list[str]) -> bool:
     for title_filter in filters:
         if _matches_regex(title_filter, pr.title):
             return True
@@ -53,7 +56,7 @@ def is_title_filtered(pr, filters):
     return False
 
 
-def is_label_filtered(pr, filters):
+def is_label_filtered(pr: github.PRInfo, filters: list[str]) -> bool:
     for label in pr.labels:
         for label_filter in filters:
             if _matches_regex(label_filter, label):
@@ -62,7 +65,7 @@ def is_label_filtered(pr, filters):
     return False
 
 
-def is_pr_matched(pr, repo):
+def is_pr_matched(pr: github.PRInfo, repo: config.Repository) -> bool:
     return (is_pr_watched(pr, repo.paths)
             and not is_title_filtered(pr, repo.title_filters)
             and not is_label_filtered(pr, repo.label_filters))

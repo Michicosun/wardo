@@ -14,19 +14,18 @@ RETRIES = requests.adapters.Retry(total=10,
                                   allowed_methods=["GET", "POST"])
 
 
-def _create_session():
+def _create_session() -> requests.Session:
     s = requests.Session()
     s.mount("https://", requests.adapters.HTTPAdapter(max_retries=RETRIES))
     return s
 
 
 def request(send):
-    for attempt in range(ATTEMPTS):
+    for attempt in range(ATTEMPTS - 1):
         try:
             return send(_create_session())
         except Exception:
-            if attempt == ATTEMPTS - 1:
-                raise
-
             log.warning("request failed (attempt %d/%d), retrying", attempt + 1, ATTEMPTS, exc_info=True)
             time.sleep(2 ** attempt)
+
+    return send(_create_session())

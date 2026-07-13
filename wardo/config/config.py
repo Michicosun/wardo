@@ -36,7 +36,7 @@ class Config:
     wardo: WardoConfig
 
 
-def load(path = "config.yaml"):
+def load(path: str = "config.yaml") -> Config:
     with open(path) as f:
         raw = yaml.safe_load(f)
 

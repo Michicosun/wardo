@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 import time
 from collections.abc import Iterable, Iterator
@@ -11,6 +12,24 @@ from . import retries
 log = logging.getLogger("wardo.telegram")
 
 MAX_LEN = 4096
+
+
+@dataclasses.dataclass
+class Message:
+    user_id: int | None
+    username: str | None
+    chat_id: int
+    text: str
+
+
+def _parse_message(msg: dict[str, Any]) -> Message:
+    user = msg.get("from", {})
+    return Message(
+        user_id=user.get("id"),
+        username=user.get("username"),
+        chat_id=msg["chat"]["id"],
+        text=(msg.get("text") or "").strip(),
+    )
 
 
 def _chunk(lines: Iterable[str], limit: int = MAX_LEN) -> list[str]:
@@ -58,7 +77,7 @@ class Telegram:
         for part in _chunk(lines):
             self.send(chat_id, part)
 
-    def updates(self) -> Iterator[dict[str, Any]]:
+    def updates(self) -> Iterator[Message]:
         offset = 0
         while True:
             try:
@@ -71,4 +90,4 @@ class Telegram:
             for u in results:
                 offset = u["update_id"] + 1
                 if "message" in u:
-                    yield u["message"]
+                    yield _parse_message(u["message"])
