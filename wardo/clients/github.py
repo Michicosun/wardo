@@ -8,21 +8,32 @@ from ..config import config
 
 log = logging.getLogger("wardo.github")
 
+PR_FIELDS = """
+      number title url createdAt updatedAt closedAt mergedAt
+      author { login }
+      labels(first: 100) { nodes { name } }
+      files(first: 100) { nodes { path } }
+"""
+
 SEARCH_PRS_QUERY = """
 query($q: String!, $pageSize: Int!, $cursor: String) {
   search(query: $q, type: ISSUE, first: $pageSize, after: $cursor) {
     pageInfo { hasNextPage endCursor }
     nodes {
-      ... on PullRequest {
-        number title url createdAt updatedAt closedAt mergedAt
-        author { login }
-        labels(first: 100) { nodes { name } }
-        files(first: 100) { nodes { path } }
-      }
+      ... on PullRequest {%s}
     }
   }
 }
-"""
+""" % PR_FIELDS
+
+PR_QUERY = """
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {%s}
+  }
+}
+""" % PR_FIELDS
+
 
 @dataclasses.dataclass
 class PRInfo:
@@ -91,6 +102,12 @@ class GitHub:
                 return
 
             cursor = found["pageInfo"]["endCursor"]
+
+    def pr(self, repo, number):
+        owner, name = repo.split("/")
+        data = self._graphql(PR_QUERY, {"owner": owner, "name": name, "number": number})
+        node = data["repository"]["pullRequest"]
+        return _parse_pr(node) if node else None
 
     def open_prs(self, repo, cutoff):
         q = f"repo:{repo} is:pr is:open created:>={_fmt_search_ts(cutoff)} sort:created-desc"

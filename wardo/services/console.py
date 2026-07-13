@@ -1,6 +1,7 @@
 import datetime
 import html
 import logging
+import re
 
 from ..clients import github, telegram
 from . import utils
@@ -86,6 +87,8 @@ class Console:
                 self.cmd_merged(chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/closed":
                 self.cmd_closed(chat_id, parts[1] if len(parts) > 1 else "")
+            elif cmd == "/check":
+                self.cmd_check(chat_id, parts[1] if len(parts) > 1 else "")
             elif cmd == "/info":
                 self.cmd_info(chat_id)
             elif cmd in ("/start", "/help"):
@@ -117,10 +120,38 @@ class Console:
             header = f"<b>{r.repo}</b> — PRs closed without merge in watched paths in the last {days} day(s):"
             self._stream_prs(chat_id, header, self.gh.closed_prs(r.repo, cutoff), r)
 
+    def cmd_check(self, chat_id, arg):
+        ref = re.search(r"github\.com/([^/\s]+)/([^/\s]+)/pull/(\d+)", arg)
+        if not ref:
+            self.tg.send(chat_id, "Usage: /check [pr url]")
+            return
+
+        repo_name = f"{ref.group(1)}/{ref.group(2)}"
+        repo = next((r for r in self.repos if r.repo == repo_name), None)
+        if repo is None:
+            self.tg.send(chat_id, f"{repo_name} is not watched")
+            return
+
+        pr = self.gh.pr(repo_name, int(ref.group(3)))
+        if pr is None:
+            self.tg.send(chat_id, "PR not found")
+            return
+
+        lines = [utils.pr_line(pr),
+                 "",
+                 f"paths: {'✅ matched' if utils.is_pr_watched(pr, repo.paths) else '❌ not matched'}",
+                 f"title filters: {'❌ filtered out' if utils.is_title_filtered(pr, repo.title_filters) else '✅ passed'}",
+                 f"label filters: {'❌ filtered out' if utils.is_label_filtered(pr, repo.label_filters) else '✅ passed'}",
+                 "",
+                 f"Verdict: {'✅ would be notified' if utils.is_pr_matched(pr, repo) else '❌ would be hidden'}"]
+
+        self.tg.send_lines(chat_id, lines)
+
     def cmd_help(self, chat_id):
         lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
                  "/merged [days] — PRs merged in the last [days] days (default 1)",
                  "/closed [days] — PRs closed without merge in the last [days] days (default 1)",
+                 "/check [pr url] — explain why a PR is shown or hidden",
                  "/info — watched repositories and settings",
                  "/help — this message"]
 

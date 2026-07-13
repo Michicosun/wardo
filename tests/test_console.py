@@ -110,6 +110,32 @@ def test_merged_and_closed(node, cmd, method, phrase):
     assert b.tg.sent[1][1] == "Nothing found"
 
 
+def test_check(node):
+    b = make_bot()
+    b.handle(msg(42, "/check nonsense"))
+    assert "Usage" in b.tg.sent[0][1]
+
+    b.handle(msg(42, "/check https://github.com/a/b/pull/5"))
+    assert b.tg.sent[1][1] == "a/b is not watched"
+
+    b.gh.pr = lambda repo, number: None
+    b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
+    assert b.tg.sent[2][1] == "PR not found"
+
+    b.gh.pr = lambda repo, number: node(title="Fix", files=["docs/x.md"])
+    b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
+    text = b.tg.sent[3][1]
+    assert "paths: ❌ not matched" in text
+    assert "title filters: ✅ passed" in text
+    assert "Verdict: ❌ would be hidden" in text
+
+    b.gh.pr = lambda repo, number: node()
+    b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
+    text = b.tg.sent[4][1]
+    assert "paths: ✅ matched" in text
+    assert "Verdict: ✅ would be notified" in text
+
+
 def test_progress_reports(node):
     b = make_bot()
     b.gh.open_prs = lambda repo, cutoff: [node(files=["docs/x.md"])] * 250

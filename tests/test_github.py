@@ -45,17 +45,32 @@ def test_queries_filter_by_cutoff(node, method, prs, expected, query):
     assert gh.queries == [query]
 
 
+RAW_PR = {
+    "number": 7, "title": "T", "url": "https://github.com/x/y/pull/7",
+    "createdAt": "2026-07-10T00:00:00Z", "updatedAt": "2026-07-10T01:00:00Z", "closedAt": None, "mergedAt": None,
+    "author": None,
+    "labels": {"nodes": [{"name": "pr-bugfix"}]},
+    "files": {"nodes": [{"path": "src/a.py"}]},
+}
+
+
 def test_parse_pr():
-    raw = {
-        "number": 7, "title": "T", "url": "https://github.com/x/y/pull/7",
-        "createdAt": "2026-07-10T00:00:00Z", "updatedAt": "2026-07-10T01:00:00Z", "closedAt": None, "mergedAt": None,
-        "author": None,
-        "labels": {"nodes": [{"name": "pr-bugfix"}]},
-        "files": {"nodes": [{"path": "src/a.py"}]},
-    }
-    pr = github._parse_pr(raw)
+    pr = github._parse_pr(RAW_PR)
     assert pr.number == 7
     assert pr.author == "ghost"
     assert pr.merged_at is None
     assert pr.files == ["src/a.py"]
     assert pr.labels == ["pr-bugfix"]
+
+
+def test_pr_fetch():
+    class FakePRGH(github.GitHub):
+        def __init__(self, node):
+            super().__init__(config.GithubConfig(token="x"))
+            self.node = node
+
+        def _graphql(self, query, variables):
+            return {"repository": {"pullRequest": self.node}}
+
+    assert FakePRGH(RAW_PR).pr("x/y", 7).number == 7
+    assert FakePRGH(None).pr("x/y", 7) is None
