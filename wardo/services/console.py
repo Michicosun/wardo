@@ -147,16 +147,6 @@ class Console:
 
         self.tg.send_lines(chat_id, lines)
 
-    def cmd_help(self, chat_id):
-        lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
-                 "/merged [days] — PRs merged in the last [days] days (default 1)",
-                 "/closed [days] — PRs closed without merge in the last [days] days (default 1)",
-                 "/check [pr url] — explain why a PR is shown or hidden",
-                 "/info — watched repositories and settings",
-                 "/help — this message"]
-
-        self.tg.send_lines(chat_id, lines)
-
     def cmd_info(self, chat_id):
         lines = [f"<b>now:</b> {_format_ts(utils.now())}",
                  f"<b>last ping:</b> {_format_ts(self.pinger_bot.last_ping)}",
@@ -180,6 +170,16 @@ class Console:
                 lines += [f"    {html.escape(str(t))}" for t in r.label_filters]
 
             lines.append("")
+
+        self.tg.send_lines(chat_id, lines)
+
+    def cmd_help(self, chat_id):
+        lines = ["/open [days] — open PRs created in the last [days] days (default 1)",
+                 "/merged [days] — PRs merged in the last [days] days (default 1)",
+                 "/closed [days] — PRs closed without merge in the last [days] days (default 1)",
+                 "/check [pr url] — explain why a PR is shown or hidden",
+                 "/info — watched repositories and settings",
+                 "/help — this message"]
 
         self.tg.send_lines(chat_id, lines)
 

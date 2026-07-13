@@ -6,6 +6,7 @@ from typing import Any
 import requests
 
 from ..config import config
+from . import retries
 
 log = logging.getLogger("wardo.telegram")
 
@@ -32,14 +33,20 @@ class Telegram:
         self.api = f"https://api.telegram.org/bot{cfg.token}"
 
     def _send_message(self, chat_id: int, text: str) -> requests.Response:
-        return requests.post(f"{self.api}/sendMessage", json={
-            "chat_id": chat_id, "text": text,
-            "parse_mode": "HTML", "disable_web_page_preview": True,
-        }, timeout=30)
+        def call(s):
+            return s.post(f"{self.api}/sendMessage", json={
+                "chat_id": chat_id, "text": text,
+                "parse_mode": "HTML", "disable_web_page_preview": True,
+            }, timeout=30)
+
+        return retries.request(call)
 
     def _get_updates(self, offset: int) -> list[dict[str, Any]]:
-        r = requests.get(f"{self.api}/getUpdates", params={"offset": offset, "timeout": 50}, timeout=60)
-        return r.json().get("result", [])
+        def call(s):
+            r = s.get(f"{self.api}/getUpdates", params={"offset": offset, "timeout": 50}, timeout=60)
+            return r.json().get("result", [])
+
+        return retries.request(call)
 
     def send(self, chat_id: int, text: str) -> None:
         r = self._send_message(chat_id, text)

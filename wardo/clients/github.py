@@ -2,9 +2,8 @@ import dataclasses
 import datetime
 import logging
 
-import requests
-
 from ..config import config
+from . import retries
 
 log = logging.getLogger("wardo.github")
 
@@ -78,10 +77,12 @@ class GitHub:
         self.headers = {"Authorization": f"Bearer {cfg.token}"}
 
     def _graphql(self, query, variables):
-        r = requests.post(self.api, json={"query": query, "variables": variables}, headers=self.headers, timeout=60)
-        r.raise_for_status()
+        def call(s):
+            r = s.post(self.api, json={"query": query, "variables": variables}, headers=self.headers, timeout=60)
+            r.raise_for_status()
+            return r.json()
 
-        data = r.json()
+        data = retries.request(call)
 
         if data.get("errors"):
             raise RuntimeError(str(data["errors"]))
