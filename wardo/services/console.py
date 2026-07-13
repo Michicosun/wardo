@@ -158,7 +158,8 @@ class Console:
         self.tg.send_lines(chat_id, lines)
 
     def cmd_info(self, chat_id):
-        lines = [f"<b>last ping:</b> {_format_ts(self.pinger_bot.last_ping)}",
+        lines = [f"<b>now:</b> {_format_ts(utils.now())}",
+                 f"<b>last ping:</b> {_format_ts(self.pinger_bot.last_ping)}",
                  f"<b>next ping:</b> {_format_ts(self.pinger_bot.next_ping)}",
                  "",
                  f"<b>poll interval:</b> {self.poll_interval}s",

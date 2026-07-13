@@ -53,6 +53,7 @@ def test_info(monkeypatch):
     b = make_bot()
     b.handle(msg(42, "/info"))
     text = b.tg.sent[0][1]
+    assert "<b>now:</b> never" not in text and "<b>now:</b>" in text
     assert "<b>poll interval:</b> 5s" in text
     assert "<b>last ping:</b> never" in text
     assert "<b>next ping:</b>" in text and "<b>next ping:</b> never" not in text
@@ -64,7 +65,7 @@ def test_info(monkeypatch):
     monkeypatch.setattr(b.repos[0], "label_filters", ["pr-backport"])
     b.handle(msg(42, "/info"))
     text = b.tg.sent[1][1]
-    assert "never" not in text and text.count("UTC") == 3
+    assert "never" not in text and text.count("UTC") == 4
     assert "title filters:" in text and "^Backport" in text
     assert "label filters:" in text and "pr-backport" in text
 
