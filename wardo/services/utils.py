@@ -1,12 +1,33 @@
 import datetime
+import fnmatch
 import html
 import re
+
+
+def _matches_regex(pattern, value):
+    try:
+        if re.search(pattern, value):
+            return True
+    except:
+        pass
+
+    return False
+
+
+def _matches_glob(pattern, value):
+    try:
+        if fnmatch.fnmatchcase(value, pattern):
+            return True
+    except:
+        pass
+
+    return False
 
 
 def _is_pr_watched(pr, watched):
     for changed_file in pr.files:
         for watched_path in watched:
-            if re.search(watched_path, changed_file):
+            if _matches_regex(watched_path, changed_file) or _matches_glob(watched_path, changed_file):
                 return True
 
     return False
@@ -14,7 +35,7 @@ def _is_pr_watched(pr, watched):
 
 def _is_title_filtered(pr, filters):
     for title_filter in filters:
-        if re.search(title_filter, pr.title):
+        if _matches_regex(title_filter, pr.title):
             return True
 
     return False
@@ -23,7 +44,7 @@ def _is_title_filtered(pr, filters):
 def _is_label_filtered(pr, filters):
     for label in pr.labels:
         for label_filter in filters:
-            if re.search(label_filter, label):
+            if _matches_regex(label_filter, label):
                 return True
 
     return False

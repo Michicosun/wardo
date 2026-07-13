@@ -53,6 +53,13 @@ def test_is_pr_matched(node):
     bare = config.Repository(repo="x/y", paths=["src/"], title_filters=[], label_filters=[])
     assert utils.is_pr_matched(node(title="Backport", labels=["pr-backport"]), bare)
 
+    # globs work for paths; title/label filters are regex-only, so glob-style ones are inert
+    globs = config.Repository(repo="x/y", paths=["*Coordination*"],
+                              title_filters=["*WIP*"], label_filters=["pr-*-upstream"])
+    assert utils.is_pr_matched(node(files=["src/Coordination/KeeperStorage.cpp"]), globs)
+    assert utils.is_pr_matched(node(files=["src/Coordination/K.cpp"], title="Some WIP change"), globs)
+    assert utils.is_pr_matched(node(files=["src/Coordination/K.cpp"], labels=["pr-sync-upstream"]), globs)
+
 
 @pytest.mark.parametrize("method, extra, event", [
     ("open_prs", {}, "New PR"),

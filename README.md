@@ -27,7 +27,7 @@ wardo:
   allowed_user_id: 123456789                 # your Telegram user id
   repositories:
     - repo: ClickHouse/ClickHouse
-      paths:                                 # substring or regex
+      paths:                                 # substring, regex or glob
         - src/Processors/QueryPlan/
         - ^src/Storages/MergeTree/.*\.cpp$
       title_filters:                         # optional: hide PRs whose title matches
