@@ -8,7 +8,7 @@ log = logging.getLogger("wardo.retries")
 
 ATTEMPTS = 3
 
-RETRIES = requests.adapters.Retry(total=10,
+RETRIES = requests.adapters.Retry(total=3,
                                   backoff_factor=1,
                                   status_forcelist=[429, 500, 502, 503, 504],
                                   allowed_methods=["GET", "POST"])

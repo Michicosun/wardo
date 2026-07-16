@@ -45,6 +45,16 @@ def test_queries_filter_by_cutoff(node, method, prs, expected, query):
     assert gh.queries == [query]
 
 
+def test_date_field_overrides_search_qualifier():
+    gh = FakeGH([])
+    list(gh.merged_prs("x/y", github._parse_ts(CUTOFF), date_field="updated"))
+    list(gh.closed_prs("x/y", github._parse_ts(CUTOFF), date_field="updated"))
+    assert gh.queries == [
+        "repo:x/y is:pr is:merged updated:>=2026-07-04T00:00:00+00:00 sort:updated-desc",
+        "repo:x/y is:pr is:closed is:unmerged updated:>=2026-07-04T00:00:00+00:00 sort:updated-desc",
+    ]
+
+
 RAW_PR = {
     "number": 7, "title": "T", "url": "https://github.com/x/y/pull/7",
     "createdAt": "2026-07-10T00:00:00Z", "updatedAt": "2026-07-10T01:00:00Z", "closedAt": None, "mergedAt": None,

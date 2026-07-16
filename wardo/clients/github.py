@@ -91,7 +91,7 @@ class GitHub:
 
         return data["data"]
 
-    def _search_prs(self, q: str, page_size: int = 100) -> Iterator[PRInfo]:
+    def _search_prs(self, q: str, page_size: int = 25) -> Iterator[PRInfo]:
         cursor = None
         while True:
             data = self._graphql(SEARCH_PRS_QUERY, {"q": q, "pageSize": page_size, "cursor": cursor})
@@ -118,14 +118,14 @@ class GitHub:
             if pr.created_at >= cutoff:
                 yield pr
 
-    def merged_prs(self, repo: str, cutoff: datetime.datetime) -> Iterator[PRInfo]:
-        q = f"repo:{repo} is:pr is:merged merged:>={_fmt_search_ts(cutoff)} sort:updated-desc"
+    def merged_prs(self, repo: str, cutoff: datetime.datetime, date_field: str = "merged") -> Iterator[PRInfo]:
+        q = f"repo:{repo} is:pr is:merged {date_field}:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.merged_at and pr.merged_at >= cutoff:
                 yield pr
 
-    def closed_prs(self, repo: str, cutoff: datetime.datetime) -> Iterator[PRInfo]:
-        q = f"repo:{repo} is:pr is:closed is:unmerged closed:>={_fmt_search_ts(cutoff)} sort:updated-desc"
+    def closed_prs(self, repo: str, cutoff: datetime.datetime, date_field: str = "closed") -> Iterator[PRInfo]:
+        q = f"repo:{repo} is:pr is:closed is:unmerged {date_field}:>={_fmt_search_ts(cutoff)} sort:updated-desc"
         for pr in self._search_prs(q):
             if pr.closed_at and not pr.merged_at and pr.closed_at >= cutoff:
                 yield pr
