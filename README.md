@@ -16,23 +16,26 @@ docker logs -f wardo
 
 ```yaml
 github:
-  token: ghp_xxxxxxxxxxxx                    # personal access token, public_repo scope
+  token: ghp_xxxxxxxxxxxx                       # personal access token, public_repo scope
 
 telegram:
-  token: "123456789:AA...."                  # from @BotFather
+  token: "123456789:AA...."                     # from @BotFather
 
 wardo:
-  poll_interval: 60                          # seconds between polls
-  ping_schedule: "0 9 * * *"                 # cron, sends an "I'm alive" ping
-  allowed_user_id: 123456789                 # your Telegram user id
+  poll_interval: 60                             # seconds between polls
+  ping_schedule: "0 9 * * *"                    # cron, sends an "I'm alive" ping
+  allowed_user_id: 123456789                    # your Telegram user id
   repositories:
     - repo: ClickHouse/ClickHouse
-      paths:                                 # substring, regex or glob
-        - src/Processors/QueryPlan/
-        - ^src/Storages/MergeTree/.*\.cpp$
-      title_filters:                         # optional: hide PRs whose title matches
+      components:                               # component name -> watched paths
+        query-plan:
+          - src/Processors/QueryPlan/           # each path is a substring, regex or glob
+        mergetree:
+          - ^src/Storages/MergeTree/.*\.cpp$
+          - src/Storages/MergeTree/*Background*
+      title_filters:                            # optional: hide PRs whose title matches
         - "^Backport"
-      label_filters:                         # optional: hide PRs with a matching label
+      label_filters:                            # optional: hide PRs with a matching label
         - "pr-backport"
 ```
 
