@@ -60,9 +60,9 @@ class Telegram:
 
         return retries.request(call)
 
-    def _get_updates(self, offset: int) -> list[dict[str, Any]]:
+    def _get_updates(self, offset: int, poll_timeout: int = 50) -> list[dict[str, Any]]:
         def call(s):
-            r = s.get(f"{self.api}/getUpdates", params={"offset": offset, "timeout": 50}, timeout=60)
+            r = s.get(f"{self.api}/getUpdates", params={"offset": offset, "timeout": poll_timeout}, timeout=poll_timeout + 10)
             return r.json().get("result", [])
 
         return retries.request(call)
