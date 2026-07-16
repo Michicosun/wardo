@@ -48,7 +48,7 @@ class Console:
                 continue
 
             found += 1
-            self.tg.send(chat_id, utils.pr_line(pr))
+            self.tg.send(chat_id, utils.pr_message(pr, repo.repo, utils.matched_components(pr, repo.components)))
 
         if not found:
             self.tg.send(chat_id, "Nothing found")
@@ -129,9 +129,11 @@ class Console:
             self.tg.send(chat_id, "PR not found")
             return
 
-        lines = [utils.pr_line(pr),
+        components = utils.matched_components(pr, repo.components)
+        matched = html.escape(", ".join(components))
+        lines = [utils.pr_message(pr, repo_name, components),
                  "",
-                 f"paths: {'✅ matched' if utils.is_pr_watched(pr, repo.paths) else '❌ not matched'}",
+                 f"components: {f'✅ {matched}' if components else '❌ not matched'}",
                  f"title filters: {'❌ filtered out' if utils.is_title_filtered(pr, repo.title_filters) else '✅ passed'}",
                  f"label filters: {'❌ filtered out' if utils.is_label_filtered(pr, repo.label_filters) else '✅ passed'}",
                  "",
@@ -150,8 +152,10 @@ class Console:
         for r in self.repos:
             lines.append(f"<b>{r.repo}</b> (up to: {_format_ts(self.watcher_bot.since.get(r.repo))}):")
 
-            lines.append("  <b>paths:</b>")
-            lines += [f"    {html.escape(str(p))}" for p in r.paths]
+            lines.append("  <b>components:</b>")
+            for component in r.components:
+                lines.append(f"    {html.escape(component.name)}:")
+                lines += [f"      {html.escape(str(p))}" for p in component.paths]
 
             if r.title_filters:
                 lines.append("  <b>title filters:</b>")

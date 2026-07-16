@@ -12,9 +12,9 @@ log = logging.getLogger("wardo.watcher")
 SINCE_SAFETY_MARGIN = datetime.timedelta(hours=1)
 
 
-def _pr_message(event: str, repo: str, pr: github.PRInfo) -> str:
-    return (f"{event} in {repo}\n"
-            f"{utils.pr_line(pr)}")
+def _pr_message(event: str, repo: str, pr: github.PRInfo, components: list[str]) -> str:
+    return (f"{event}\n"
+            f"{utils.pr_message(pr, repo, components)}")
 
 
 def _prune(seen, horizon):
@@ -46,7 +46,7 @@ class Watcher:
                 continue
 
             log.info("%s #%s in %s", event, pr.number, r.repo)
-            self.tg.send(self.owner_id, _pr_message(event, r.repo, pr))
+            self.tg.send(self.owner_id, _pr_message(event, r.repo, pr, utils.matched_components(pr, r.components)))
 
     def _round(self) -> None:
         started = utils.now()
@@ -55,9 +55,9 @@ class Watcher:
         for r in self.repos:
             try:
                 cutoff = self.since[r.repo] - SINCE_SAFETY_MARGIN
-                self._notify(r, self.gh.open_prs(r.repo, cutoff), self.notified_open[r.repo], lambda pr: pr.created_at, "🔴 New PR")
-                self._notify(r, self.gh.merged_prs(r.repo, cutoff, date_field="updated"), self.notified_merged[r.repo], lambda pr: pr.merged_at, "🟣 Merged PR")
-                self._notify(r, self.gh.closed_prs(r.repo, cutoff, date_field="updated"), self.notified_closed[r.repo], lambda pr: pr.closed_at, "🟢 Closed PR")
+                self._notify(r, self.gh.open_prs(r.repo, cutoff), self.notified_open[r.repo], lambda pr: pr.created_at, "🔴 New")
+                self._notify(r, self.gh.merged_prs(r.repo, cutoff, date_field="updated"), self.notified_merged[r.repo], lambda pr: pr.merged_at, "🟣 Merged")
+                self._notify(r, self.gh.closed_prs(r.repo, cutoff, date_field="updated"), self.notified_closed[r.repo], lambda pr: pr.closed_at, "🟢 Closed")
 
                 horizon = started - SINCE_SAFETY_MARGIN
                 self.since[r.repo] = started

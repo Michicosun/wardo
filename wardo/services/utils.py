@@ -7,6 +7,10 @@ from ..clients import github
 from ..config import config
 
 
+def _pr_link(pr: github.PRInfo) -> str:
+    return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
+
+
 def _matches_regex(pattern: str, value: str) -> bool:
     try:
         if re.search(pattern, value):
@@ -31,12 +35,11 @@ def now() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def pr_link(pr: github.PRInfo) -> str:
-    return f'<a href="{pr.url}">{html.escape(pr.title)}</a>'
-
-
-def pr_line(pr: github.PRInfo) -> str:
-    return f"{pr_link(pr)} — {pr.author}"
+def pr_message(pr: github.PRInfo, repo: str, components: list[str]) -> str:
+    return (f"{_pr_link(pr)}\n"
+            f"Repository: {repo}\n"
+            f"Author: {html.escape(pr.author)}\n"
+            f"Components: {html.escape(', '.join(components))}")
 
 
 def is_pr_watched(pr: github.PRInfo, watched: list[str]) -> bool:
@@ -66,6 +69,10 @@ def is_label_filtered(pr: github.PRInfo, filters: list[str]) -> bool:
 
 
 def is_pr_matched(pr: github.PRInfo, repo: config.Repository) -> bool:
-    return (is_pr_watched(pr, repo.paths)
+    return (bool(matched_components(pr, repo.components))
             and not is_title_filtered(pr, repo.title_filters)
             and not is_label_filtered(pr, repo.label_filters))
+
+
+def matched_components(pr: github.PRInfo, components: list[config.Component]) -> list[str]:
+    return [component.name for component in components if is_pr_watched(pr, component.paths)]

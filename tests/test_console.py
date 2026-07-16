@@ -8,7 +8,8 @@ CFG = config.Config(
     github=config.GithubConfig(token="x"),
     telegram=config.TelegramConfig(token="y"),
     wardo=config.WardoConfig(poll_interval=5, ping_schedule="0 9 * * *", allowed_user_id=42,
-                             repositories=[config.Repository(repo="x/y", paths=["src/"], title_filters=[], label_filters=[])]),
+                             repositories=[config.Repository(repo="x/y", components=[config.Component(name="core", paths=["src/"])],
+                                                             title_filters=[], label_filters=[])]),
 )
 
 
@@ -133,14 +134,15 @@ def test_check(node):
     b.gh.pr = lambda repo, number: node(title="Fix", files=["docs/x.md"])
     b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
     text = b.tg.sent[3][1]
-    assert "paths: ❌ not matched" in text
+    assert "components: ❌ not matched" in text
     assert "title filters: ✅ passed" in text
     assert "Verdict: ❌ would be hidden" in text
 
     b.gh.pr = lambda repo, number: node()
     b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
     text = b.tg.sent[4][1]
-    assert "paths: ✅ matched" in text
+    assert "Components: core" in text
+    assert "components: ✅ core" in text
     assert "Verdict: ✅ would be notified" in text
 
 
