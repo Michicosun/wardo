@@ -134,16 +134,16 @@ def test_check(node):
     b.gh.pr = lambda repo, number: node(title="Fix", files=["docs/x.md"])
     b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
     text = b.tg.sent[3][1]
-    assert "components: ❌ not matched" in text
-    assert "title filters: ✅ passed" in text
-    assert "Verdict: ❌ would be hidden" in text
+    assert "<b>components:</b> ❌ not matched" in text
+    assert "<b>title filters:</b> ✅ passed" in text
+    assert "<b>Verdict:</b> ❌ would be hidden" in text
 
     b.gh.pr = lambda repo, number: node()
     b.handle(msg(42, "/check https://github.com/x/y/pull/5"))
     text = b.tg.sent[4][1]
-    assert "Components: core" in text
-    assert "components: ✅ core" in text
-    assert "Verdict: ✅ would be notified" in text
+    assert "<b>Components:</b> core" in text
+    assert "<b>components:</b> ✅ core" in text
+    assert "<b>Verdict:</b> ✅ would be notified" in text
 
 
 def test_progress_reports(node):

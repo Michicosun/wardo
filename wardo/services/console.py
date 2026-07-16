@@ -133,11 +133,11 @@ class Console:
         matched = html.escape(", ".join(components))
         lines = [utils.pr_message(pr, repo_name, components),
                  "",
-                 f"components: {f'✅ {matched}' if components else '❌ not matched'}",
-                 f"title filters: {'❌ filtered out' if utils.is_title_filtered(pr, repo.title_filters) else '✅ passed'}",
-                 f"label filters: {'❌ filtered out' if utils.is_label_filtered(pr, repo.label_filters) else '✅ passed'}",
+                 f"<b>components:</b> {f'✅ {matched}' if components else '❌ not matched'}",
+                 f"<b>title filters:</b> {'❌ filtered out' if utils.is_title_filtered(pr, repo.title_filters) else '✅ passed'}",
+                 f"<b>label filters:</b> {'❌ filtered out' if utils.is_label_filtered(pr, repo.label_filters) else '✅ passed'}",
                  "",
-                 f"Verdict: {'✅ would be notified' if utils.is_pr_matched(pr, repo) else '❌ would be hidden'}"]
+                 f"<b>Verdict:</b> {'✅ would be notified' if utils.is_pr_matched(pr, repo) else '❌ would be hidden'}"]
 
         self.tg.send_lines(chat_id, lines)
 
@@ -154,7 +154,7 @@ class Console:
 
             lines.append("  <b>components:</b>")
             for component in r.components:
-                lines.append(f"    {html.escape(component.name)}:")
+                lines.append(f"    <b>{html.escape(component.name)}:</b>")
                 lines += [f"      {html.escape(str(p))}" for p in component.paths]
 
             if r.title_filters:

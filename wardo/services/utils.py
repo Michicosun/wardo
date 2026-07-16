@@ -37,9 +37,9 @@ def now() -> datetime.datetime:
 
 def pr_message(pr: github.PRInfo, repo: str, components: list[str]) -> str:
     return (f"{_pr_link(pr)}\n"
-            f"Repository: {repo}\n"
-            f"Author: {html.escape(pr.author)}\n"
-            f"Components: {html.escape(', '.join(components))}")
+            f"<b>Repository:</b> {repo}\n"
+            f"<b>Author:</b> {html.escape(pr.author)}\n"
+            f"<b>Components:</b> {html.escape(', '.join(components))}")
 
 
 def is_pr_watched(pr: github.PRInfo, watched: list[str]) -> bool:
