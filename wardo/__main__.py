@@ -2,7 +2,7 @@ import logging
 import sys
 
 from .config import config
-from .services import console, pinger, watcher
+from .services import console, pinger, sentinel, watcher
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -12,6 +12,9 @@ cfg = config.load(sys.argv[1] if len(sys.argv) > 1 else "config.yaml")
 
 watcher_bot = watcher.Watcher(cfg)
 watcher_bot.start()
+
+sentinel_bot = sentinel.Sentinel(cfg, watcher_bot)
+sentinel_bot.start()
 
 pinger_bot = pinger.Pinger(cfg)
 pinger_bot.start()

@@ -30,6 +30,8 @@ class TelegramConfig:
 @dataclasses.dataclass
 class WardoConfig:
     poll_interval: int
+    stall_interval: int
+    check_interval: int
     ping_schedule: str
     allowed_user_id: int
     repositories: list[Repository]
@@ -57,6 +59,8 @@ def load(path: str = "config.yaml") -> Config:
         ),
         wardo=WardoConfig(
             poll_interval=int(w.get("poll_interval", 60)),
+            stall_interval=int(w["stall_interval"]),
+            check_interval=int(w["check_interval"]),
             ping_schedule=w["ping_schedule"],
             allowed_user_id=int(w["allowed_user_id"]),
             repositories=[Repository(repo=r["repo"],

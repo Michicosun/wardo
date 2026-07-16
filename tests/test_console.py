@@ -7,7 +7,7 @@ from wardo.services import console, pinger, utils, watcher
 CFG = config.Config(
     github=config.GithubConfig(token="x"),
     telegram=config.TelegramConfig(token="y"),
-    wardo=config.WardoConfig(poll_interval=5, ping_schedule="0 9 * * *", allowed_user_id=42,
+    wardo=config.WardoConfig(poll_interval=5, stall_interval=50, check_interval=5, ping_schedule="0 9 * * *", allowed_user_id=42,
                              repositories=[config.Repository(repo="x/y", components=[config.Component(name="core", paths=["src/"])],
                                                              title_filters=[], label_filters=[])]),
 )
