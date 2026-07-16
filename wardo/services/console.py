@@ -31,6 +31,8 @@ class Console:
         self.tg = telegram.Telegram(cfg.telegram)
         self.repos = cfg.wardo.repositories
         self.poll_interval = cfg.wardo.poll_interval
+        self.stall_interval = cfg.wardo.stall_interval
+        self.check_interval = cfg.wardo.check_interval
         self.owner_id = cfg.wardo.allowed_user_id
         self.watcher_bot = watcher_bot
         self.pinger_bot = pinger_bot
@@ -147,6 +149,8 @@ class Console:
                  f"<b>next ping:</b> {_format_ts(self.pinger_bot.next_ping)}",
                  "",
                  f"<b>poll interval:</b> {self.poll_interval}s",
+                 f"<b>stall interval:</b> {self.stall_interval}s",
+                 f"<b>check interval:</b> {self.check_interval}s",
                  ""]
 
         for r in self.repos:
